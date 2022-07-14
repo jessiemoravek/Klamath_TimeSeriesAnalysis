@@ -1,0 +1,904 @@
+---
+title: "2021_Temp_Visualization"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+library(astsa)
+library(forecast)
+library(dplyr)
+library(pander)
+library(MARSS)
+library(MASS)
+library(gridExtra)
+library(weathermetrics)
+library(magick)
+```
+
+## Cleaning datasets, and aligning dates
+### Alexander Pond 
+```{r, include=FALSE}
+AP1 <- read.csv("Alexander_SN_20870137.csv")
+AP1$date <- lubridate::mdy_hm(AP1$Date_Time)
+plot(AP1$date, AP1$Temp)
+plot(AP1$date, AP1$Intensity)#Note: Something wrong with intensity values starting in April??
+head(AP1, n = 50) #Need to remove first 4 values (not in the water yet)
+tail(AP1, n = 100) #Need to remove last 8 values. Sensor was dying and repeated a measurement at 11:00, removed at 10:45 to be safe. 
+AP1 <- AP1[c(4:30126),] 
+str(AP1) #Now we have 30123 observations
+missing_data <- AP1[!complete.cases(AP1),] #Missing data at 10:37 on 28 July 2020 when sensor was read. Deleted these in .csv file
+missing_data
+
+#Position dataset into a full year data frame by daily steps
+AP1$day <- lubridate::floor_date(AP1$date, unit="day") #Bin by day
+head(AP1, n=70) #check the dataset start date
+tail(AP1) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+AP1 <- left_join(day, AP1) #join day and dataset
+str(AP1)
+
+#Group by day and calculate mean, max, min, amp
+AP1_daily <- AP1 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = FALSE}
+AP2 <- read.csv("Alexander_SN_20878648.csv")
+AP2$date <- lubridate::mdy_hm(AP2$Date_Time)
+plot(AP2$date, AP2$Temp)
+head(AP2, n = 50) #Need to remove first 6 values (not in the water yet)
+tail(AP2, n = 50) #Last NAs already removed in .csv file. Note that sensor failed on 1 October 2020
+AP2 <- AP2[c(7:7976),] 
+str(AP2) #Now we have 7970  observations
+missing_data <- AP2[!complete.cases(AP2),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+AP2$day <- lubridate::floor_date(AP2$date, unit="day") #Bin by day
+head(AP2, n=70) #check the dataset start date
+tail(AP2) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+AP2 <- left_join(day, AP2) #join day and dataset
+str(AP2)
+
+#Group by day and calculate mean, max, min, amp
+AP2_daily <- AP2 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = FALSE}
+AP3 <- read.csv("Alexander_SN_20878664.csv")
+AP3$date <- lubridate::mdy_hm(AP3$Date_Time)
+plot(AP3$date, AP3$Temp)
+head(AP3, n = 50) #Need to remove first 5 values (not in the water yet)
+tail(AP3, n = 50) #Last NAs already removed in .csv file. 
+AP3 <- AP3[c(6:35309),] 
+str(AP3) #Now we have 35304  observations
+missing_data <- AP3[!complete.cases(AP3),] 
+missing_data#No missing data
+
+#Position dataset into a full year data frame by daily steps
+AP3$day <- lubridate::floor_date(AP3$date, unit="day") #Bin by day
+head(AP3, n=70) #check the dataset start date
+tail(AP3) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+AP3 <- left_join(day, AP3) #join day and dataset
+str(AP3)
+
+#Group by day and calculate mean, max, min, amp
+AP3_daily <- AP3 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = FALSE}
+APck <- read.csv("AlexanderCk_SN_20878703.csv")
+APck$date <- lubridate::mdy_hm(APck$Date_Time)
+plot(APck$date, APck$Temp)
+head(APck, n = 100) #Need to remove first 87 values (not in the water yet)
+tail(APck, n = 500) #Last NAs already removed in .csv file. Sensor seems like it might be out of the water somewhere in late Jan 2021
+APck <- APck[c(88:18125),] #Need to cut off everything after 17 January 2021 becuase sensor out of water which we can see from amplitude
+str(APck) #Now we have 18038  observations
+missing_data <- APck[!complete.cases(APck),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+APck$day <- lubridate::floor_date(APck$date, unit="day") #Bin by day
+head(APck, n=70) #check the dataset start date
+tail(APck) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+APck <- left_join(day, APck) #join day and dataset
+
+#2021-02-23	
+
+#Group by day and calculate mean, max, min, amp
+APck_daily <- APck %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+plot(APck_daily$day,APck_daily$amp_temp)
+
+```
+
+
+###Stender Pond
+```{r, include = FALSE}
+SP1 <- read.csv("Stender_SN_20870127.csv")
+SP1$date <- lubridate::mdy_hm(SP1$Date_Time)
+plot(SP1$date, SP1$Temp)
+head(SP1, n = 100) #Need to remove first 11 values (not in the water yet) 
+tail(SP1) #Last NAs already removed in .csv file.
+SP1 <- SP1[c(12:35241),] 
+str(SP1) #Now we have 35230  observations
+missing_data <- SP1[!complete.cases(SP1),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+SP1$day <- lubridate::floor_date(SP1$date, unit="day") #Bin by day
+head(SP1, n=70) #check the dataset start date
+tail(SP1) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+SP1 <- left_join(day, SP1) #join day and dataset
+str(SP1)
+
+#Group by day and calculate mean, max, min, amp
+SP1_daily <- SP1 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+summary(SP1_daily$amp_temp,na.rm=T)
+```
+
+
+```{r, include = FALSE}
+SPout <- read.csv("StenderOut_SN_20878705.csv")
+SPout$date <- lubridate::mdy_hm(SPout$Date_Time)
+plot(SPout$date, SPout$Temp)
+head(SPout, n = 100) #Need to remove first 10 values (never in the water, in a dry outflow channel)
+tail(SPout) #Last NAs already removed in .csv file.
+SPout <- SPout[c(11:35240),] 
+str(SPout) #Now we have 35230  observations
+missing_data <- SPout[!complete.cases(SPout),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+SPout$day <- lubridate::floor_date(SPout$date, unit="day") #Bin by day
+head(SPout, n=70) #check the dataset start date
+tail(SPout) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+SPout <- left_join(day, SPout) #join day and dataset
+str(SPout)
+
+#Group by day and calculate mean, max, min, amp
+SPout_daily <- SPout %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+```{r, include = FALSE}
+#SN 650 (11 - 28 July 2020)
+SP2a <- read.csv("StenderRm_SN_20878650.csv")
+SP2a$date <- lubridate::mdy_hm(SP2a$Date_Time)
+plot(SP2a$date, SP2a$Temp)
+head(SP2a, n = 100) #Need to remove first 8 values
+tail(SP2a, n = 800) #Need to remove NAs in the last several days and get up to 12:30 when next sensor was placed. Lots of weird NAs to remove
+SP2a <- SP2a[c(9:1625,1661:1662),] 
+str(SP2a) #Now we have 1619 observations
+missing_data <- SP2a[!complete.cases(SP2a),]
+missing_data #No missing data
+```
+
+
+```{r, include = FALSE}
+#SN 711 (28 July 2020 - 13 July 2021)
+SP2b <- read.csv("Stender_SN_20878711.csv")
+SP2b$date <- lubridate::mdy_hm(SP2b$Date_Time)
+plot(SP2b$date, SP2b$Temp)
+head(SP2b, n = 100) #Need to remove first value to match with SN 650
+tail(SP2b, n = 800) #Last NAs already removed in .csv file.
+SP2b <- SP2b[c(2:33614),] 
+str(SP2b) #Now we have 33613 observations
+missing_data <- SP2b[!complete.cases(SP2b),] 
+missing_data #No missing data
+```
+
+
+```{r, include = FALSE}
+##Combine SN 650 and SN 711 (711 replaced 650 on 28 July 2020 at ~12:15)
+#SP2 is 11 July 2020 - 13 July 2021
+
+SP2 <- rbind(SP2a,SP2b)
+plot(SP2$date,SP2$Temp)
+str(SP2) #Now we have 35232  observations
+missing_data <- SP2[!complete.cases(SP2),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+SP2$day <- lubridate::floor_date(SP2$date, unit="day") #Bin by day
+head(SP2, n=70) #check the dataset start date
+tail(SP2) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+SP2 <- left_join(day, SP2) #join day and dataset
+str(SP2)
+
+#Group by day and calculate mean, max, min, amp
+SP2_daily <- SP2 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+```{r, include = FALSE}
+SPck <- read.csv("StenderCk_SN_20870136.csv")
+SPck$date <- lubridate::mdy_hm(SPck$Date_Time)
+plot(SPck$date, SPck$Temp)
+head(SPck, n = 100) #Need to remove first 5 values. Also remove 1140:1141 on 28 July 2020 when sensor was reset 
+tail(SPck, n = 800) #Sensor started to fail on 15 April 2021, removed last day of readings. Note that sensor failed on 16 April 2021
+SPck <- SPck[c(6:1139,1142:26240),] 
+SPck <- SPck%>%filter(date<'2020-11-15 00:00:00'| date > '2020-12-16 00:00:00')#removed 15 Nov through 16 Dec when sensor was out of water
+str(SPck) #Now we have 24219  observations
+missing_data <- SPck[!complete.cases(SPck),] #No missing data
+missing_data
+
+#Position dataset into a full year data frame by daily steps
+SPck$day <- lubridate::floor_date(SPck$date, unit="day") #Bin by day
+head(SPck, n=70) #check the dataset start date
+tail(SPck) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+SPck <- left_join(day, SPck) #join day and dataset
+str(SPck)
+
+#Group by day and calculate mean, max, min, amp
+SPck_daily <- SPck %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+plot(SPck_daily$day, SPck_daily$amp_temp)
+```
+
+###Durazo Pond
+```{r, include = FALSE}
+Durazo <- read.csv("Durazo_SN_20878643.csv")
+Durazo$date <- lubridate::mdy_hm(Durazo$Date_Time)
+plot(Durazo$date, Durazo$Temp)
+head(Durazo, n = 100) #Need to remove first 9 values 
+tail(Durazo) #NAs removed in excel
+Durazo <- Durazo[c(10:35019),] 
+str(Durazo) #Now we have 35010  observations
+missing_data <- Durazo[!complete.cases(Durazo),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+Durazo$day <- lubridate::floor_date(Durazo$date, unit="day") #Bin by day
+head(Durazo, n=70) #check the dataset start date
+tail(Durazo) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+Durazo <- left_join(day, Durazo) #join day and dataset
+str(Durazo)
+
+#Group by day and calculate mean, max, min, amp
+Durazo_daily <- Durazo %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+
+```
+
+
+###Lower Seiad Pond
+```{r, include = FALSE}
+LS <- read.csv("LowerSeiad_SN_20878706.csv")
+LS$date <- lubridate::mdy_hm(LS$Date_Time)
+plot(LS$date, LS$Temp)
+head(LS, n = 100) #Need to remove first 3 values 
+tail(LS) #Last several NAs removed in excel 
+LS <- LS[c(4:35021),] 
+str(LS) #Now we have 35018 observations
+missing_data <- LS[!complete.cases(LS),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+LS$day <- lubridate::floor_date(LS$date, unit="day") #Bin by day
+head(LS, n=70) #check the dataset start date
+tail(LS) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+LS <- left_join(day, LS) #join day and dataset
+str(LS)
+
+#Group by day and calculate mean, max, min, amp
+LS_daily <- LS %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = FALSE}
+LSck <- read.csv("LowerSeiadCk_SN_20878668.csv")
+LSck$date <- lubridate::mdy_hm(LSck$Date_Time)
+plot(LSck$date, LSck$Temp)
+head(LSck, n = 100) #Need to remove first 4 values 
+tail(LSck) #Need to remove last value
+LSck <- LSck[c(5:35020),] 
+LSck <- LSck%>%filter(date<'2020-08-21 00:00:00'| date > '2020-09-28 00:00:00') #removed data between 21 Aug and 28 Sept when sensor was out of water
+str(LSck) #Now we have 35016  observations
+missing_data <- LSck[!complete.cases(LSck),] #No missing data
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+LSck$day <- lubridate::floor_date(LSck$date, unit="day") #Bin by day
+head(LSck, n=70) #check the dataset start date
+tail(LSck) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+LSck <- left_join(day, LSck) #join day and dataset
+str(LSck)
+
+#Group by day and calculate mean, max, min, amp
+LSck_daily <- LSck %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+plot(LSck_daily$day,LSck_daily$amp_temp)
+#LSck_daily[LSck_daily$amp_temp>9,] #Figureing out when amp temp is too high (i.e. sensor out of creek)
+
+```
+
+###May Pond
+```{r, include = FALSE}
+May <- read.csv("May_SN_20870134.csv")
+May$date <- lubridate::mdy_hm(May$Date_Time)
+plot(May$date, May$Temp)
+head(May, n = 100) #Need to remove first 3 values 
+tail(May, n = 400) #NAs removed in .csv file -- Note, sensor died in June and removed last several days of data 
+May <- May[c(4:1438,1443:32628),] 
+str(May) #Now we have 32621 observations
+missing_data <- May[!complete.cases(May),] #No missing data
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+May$day <- lubridate::floor_date(May$date, unit="day") #Bin by day
+head(May, n=70) #check the dataset start date
+tail(May) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+May <- left_join(day, May) #join day and dataset
+str(May)
+
+#Group by day and calculate mean, max, min, amp
+May_daily <- May %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = FALSE}
+MayCk <- read.csv("MayCk_SN_20878646.csv")
+MayCk$date <- lubridate::mdy_hm(MayCk$Date_Time)
+plot(MayCk$date, MayCk$Temp)
+head(MayCk, n = 100) #Need to remove first 3 values 
+tail(MayCk) #All good
+MayCk <- MayCk[c(4:35028),] 
+str(MayCk) #Now we have 35025  observations
+missing_data <- MayCk[!complete.cases(MayCk),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+MayCk$day <- lubridate::floor_date(MayCk$date, unit="day") #Bin by day
+head(MayCk, n=70) #check the dataset start date
+tail(MayCk) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+MayCk <- left_join(day, MayCk) #join day and dataset
+str(MayCk)
+
+#Group by day and calculate mean, max, min, amp
+MayCk_daily <- MayCk %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+###Fish Gulch
+```{r, include = F}
+FG2 <- read.csv("FishGulch_SN_20870133.csv")
+FG2$date <- lubridate::mdy_hm(FG2$Date_Time) 
+plot(FG2$date, FG2$Temp)
+head(FG2, n = 50) #Need to remove first 10 values (not in the water yet)
+tail(FG2, n = 50) #Look sok 
+FG2 <- FG2[c(11:1653,1657:35244),] 
+FG2 <- FG2%>%filter(date<'2020-11-20 00:00:00'| date > '2021-06-01 00:00:00') #removed data between 20 nov and 1 June when sensor was out of water
+str(FG2)
+missing_data <- FG2[!complete.cases(FG2),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+FG2$day <- lubridate::floor_date(FG2$date, unit="day") #Bin by day
+head(FG2, n=70) #check the dataset start date
+tail(FG2) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+FG2 <- left_join(day, FG2) #join day and dataset
+str(FG2)
+
+#Group by day and calculate mean, max, min, amp
+FG2_daily <- FG2 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+plot(FG2_daily$day,FG2_daily$amp_temp)
+FG2_daily%>%filter(amp_temp>6)
+```
+
+
+```{r,include = F}
+FG3 <- read.csv("FishGulch_SN_20878708.csv")
+FG3$date <- lubridate::mdy_hm(FG3$Date_Time) 
+plot(FG3$date, FG3$Temp)
+head(FG3, n = 50) #Need to remove first 8 values (not in the water yet)
+tail(FG3, n = 50) #Looks ok. 
+FG3 <- FG3[c(9:1652,1666:35242),] 
+str(FG3) #Now we have 35234  observations
+missing_data <- FG3[!complete.cases(FG3),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+FG3$day <- lubridate::floor_date(FG3$date, unit="day") #Bin by day
+head(FG3, n=70) #check the dataset start date
+tail(FG3) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+FG3 <- left_join(day, FG3) #join day and dataset
+str(FG3)
+
+#Group by day and calculate mean, max, min, amp
+FG3_daily <- FG3 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+```{r, include = F}
+FGck <- read.csv("FishGulchCk_SN_20878671.csv")
+FGck$date <- lubridate::mdy_hm(FGck$Date_Time) 
+plot(FGck$date, FGck$Temp)
+head(FGck, n = 50) #looks ok
+tail(FGck, n = 50) #looks ok
+FGck <- FGck[c(1:1640,1643:35233),] 
+str(FGck) #Now we have 35231 observations
+missing_data <- FGck[!complete.cases(FGck),] 
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+FGck$day <- lubridate::floor_date(FGck$date, unit="day") #Bin by day
+head(FGck, n=70) #check the dataset start date
+tail(FGck) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+FGck <- left_join(day, FGck) #join day and dataset
+str(FGck)
+
+#Group by day and calculate mean, max, min, amp
+FGck_daily <- FGck %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+###Goodman Pond
+```{r, include = F}
+GP1 <- read.csv("Goodman_SN_20878644.csv")
+GP1$date <- lubridate::mdy_hm(GP1$Date_Time)
+plot(GP1$date, GP1$Temp)
+head(GP1, n = 50) #Need to remove first 1 values (not in the water yet)
+tail(GP1, n = 50) #Need to remove last 8 values (out of water) 
+GP1 <- GP1[c(2:1749,1753:35336),]
+GP1 <- GP1%>%filter(date<'2020-07-29 00:00:00'| date > '2020-09-21 00:00:00') #removed data between 29 July and 21 Sept when sensor was out of water
+str(GP1) #Now we have 35335  observations
+missing_data <- GP1[!complete.cases(GP1),] #No missing data
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+GP1$day <- lubridate::floor_date(GP1$date, unit="day") #Bin by day
+head(GP1, n=70) #check the dataset start date
+tail(GP1) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+GP1 <- left_join(day, GP1) #join day and dataset
+str(GP1)
+
+#Group by day and calculate mean, max, min, amp
+GP1_daily <- GP1 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+plot(GP1_daily$day,GP1_daily$amp_temp)
+#GP1_daily[GP1_daily$amp_temp>6,] #Figureing out when amp temp is too high (i.e. sensor out of creek)
+
+```
+
+
+```{r, include = F}
+GP2 <- read.csv("Goodman_SN_20878647.csv")
+GP2$date <- lubridate::mdy_hm(GP2$Date_Time)
+plot(GP2$date, GP2$Temp)
+head(GP2, n = 50) #Need to remove first 2 values (not in the water yet)
+tail(GP2, n = 50) #looks ok 
+GP2 <- GP2[c(3:1749,1752:35343),] 
+str(GP2) #Now we have 35341  observations
+missing_data <- GP2[!complete.cases(GP2),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+GP2$day <- lubridate::floor_date(GP2$date, unit="day") #Bin by day
+head(GP2, n=70) #check the dataset start date
+tail(GP2) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+GP2 <- left_join(day, GP2) #join day and dataset
+str(GP2)
+
+#Group by day and calculate mean, max, min, amp
+GP2_daily <- GP2 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+```{r, include = F}
+GP3 <- read.csv("Goodman_SN_20878659.csv")
+GP3$date <- lubridate::mdy_hm(GP3$Date_Time)
+plot(GP3$date, GP3$Temp)
+head(GP3, n = 50) #Need to remove first 2 values (not in the water yet)
+tail(GP3, n = 50) #looks ok 
+GP3 <- GP3[c(3:1748,1751:35343),] 
+str(GP3) #Now we have 35339  observations
+missing_data <- GP3[!complete.cases(GP3),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+GP3$day <- lubridate::floor_date(GP3$date, unit="day") #Bin by day
+head(GP3, n=70) #check the dataset start date
+tail(GP3) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+GP3 <- left_join(day, GP3) #join day and dataset
+str(GP3)
+
+#Group by day and calculate mean, max, min, amp
+GP3_daily <- GP3 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = F}
+GPck <- read.csv("GoodmanCk_SN_20878654.csv")
+GPck$date <- lubridate::mdy_hm(GPck$Date_Time)
+plot(GPck$date, GPck$Temp)
+head(GPck, n = 50) #Need to remove first 1 values (not in the water yet)
+tail(GPck, n = 50) #Need to remove last 1 value 
+GPck <- GPck[c(2:1071,1074:34666),]
+GPck <- GPck%>%filter(date<'2020-08-26 00:00:00'| date > '2020-11-15 00:00:00') #removed data between 26 Aug and 15 Nov when sensor was out of water
+str(GPck) #Now we have 34663  observations
+missing_data <- GPck[!complete.cases(GPck),]#No missing data
+missing_data
+
+#Position dataset into a full year data frame by daily steps
+GPck$day <- lubridate::floor_date(GPck$date, unit="day") #Bin by day
+head(GPck, n=70) #check the dataset start date
+tail(GPck) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+GPck <- left_join(day, GPck) #join day and dataset
+str(GPck)
+
+#Group by day and calculate mean, max, min, amp
+GPck_daily <- GPck %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+plot(GPck_daily$day,GPck_daily$amp_temp)
+# GPck_daily[GPck_daily$amp_temp>7,] Figureing out when amp temp is too high (i.e. sensor out of creek)
+```
+
+
+###Upper Lawrence Pond
+```{r, include = F}
+ULout <- read.csv("UpperLawrence3_SN_20878673.csv")
+ULout$date <- lubridate::mdy_hm(ULout$Date_Time)
+plot(ULout$date, ULout$Temp)
+head(ULout, n = 50) #Need to remove first 22 values (not in the water yet)
+tail(ULout, n = 50) #looks ok 
+ULout <- ULout[c(23:1943,1946:35520),] 
+str(ULout) #Now we have 1922 observations
+missing_data <- ULout[!complete.cases(ULout),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+ULout$day <- lubridate::floor_date(ULout$date, unit="day") #Bin by day
+head(ULout, n=70) #check the dataset start date
+tail(ULout) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+ULout <- left_join(day, ULout) #join day and dataset
+str(ULout)
+
+#Group by day and calculate mean, max, min, amp
+ULout_daily <- ULout %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = F}
+UL1 <- read.csv("UpperLawrence1_SN_20878682.csv")
+UL1$date <- lubridate::mdy_hm(UL1$Date_Time)
+plot(UL1$date, UL1$Temp)
+head(UL1, n = 50) #Need to remove first 5 values (not in the water yet)
+tail(UL1, n = 1150) #Need to remove last several days; sensor removed on 12 July 2021
+UL1 <- UL1[c(6:35531),] 
+str(UL1) #Now we have 35526  observations
+missing_data <- UL1[!complete.cases(UL1),] #No missing data
+missing_data
+
+#Position dataset into a full year data frame by daily steps
+UL1$day <- lubridate::floor_date(UL1$date, unit="day") #Bin by day
+head(UL1, n=70) #check the dataset start date
+tail(UL1) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+UL1 <- left_join(day, UL1) #join day and dataset
+str(UL1)
+
+#Group by day and calculate mean, max, min, amp
+UL1_daily <- UL1 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+time / 0.25
+```{r, include = F}
+UL3 <- read.csv("UpperLawrence3_SN_20878663.csv")
+UL3$date <- lubridate::mdy_hm(UL3$Date_Time)
+plot(UL3$date, UL3$Temp)
+head(UL3, n = 50) #Need to remove first 19 values (not in the water yet)
+tail(UL3, n = 50) #looks ok 
+UL3 <- UL3[c(20:1943,1947:35513),] 
+str(UL3) #Now we have 35491 observations
+missing_data <- UL3[!complete.cases(UL3),] #No missing data
+missing_data
+
+#Position dataset into a full year data frame by daily steps
+UL3$day <- lubridate::floor_date(UL3$date, unit="day") #Bin by day
+head(UL3, n=70) #check the dataset start date
+tail(UL3) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+UL3 <- left_join(day, UL3) #join day and dataset
+str(UL3)
+
+#Group by day and calculate mean, max, min, amp
+UL3_daily <- UL3 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = F}
+ULck <- read.csv("LowerLawrenceCk_SN_20870140.csv") #Lower and Upper Lawrence have the same sensor in horse creek. In 2020 i labeled that ULck, but the file name for 2021 is Lower Lawrence creek (same sensor)
+ULck$date <- lubridate::mdy_hm(ULck$Date_Time)
+plot(ULck$date, ULck$Temp)
+head(ULck, n = 50) #Need to remove first 28 values (not in the water yet)
+tail(ULck, n = 50) #looks ok 
+ULck <- ULck[c(29:1945,1948:35526),] 
+str(ULck) #Now we have 35496  observations
+missing_data <- ULck[!complete.cases(ULck),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+ULck$day <- lubridate::floor_date(ULck$date, unit="day") #Bin by day
+head(ULck, n=70) #check the dataset start date
+tail(ULck) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+ULck <- left_join(day, ULck) #join day and dataset
+str(ULck)
+
+#Group by day and calculate mean, max, min, amp
+ULck_daily <- ULck %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+###Lower Lawrence Pond
+```{r, include = F}
+LL1 <- read.csv("LowerLawrence_SN_20870131.csv")
+LL1$date <- lubridate::mdy_hm(LL1$Date_Time)
+plot(LL1$date, LL1$Temp)
+head(LL1, n = 50) #Need to remove first 9 values (not in the water yet)
+tail(LL1, n = 50) #looks ok
+LL1 <- LL1[c(10:1737,1740:35317),] 
+str(LL1) #Now we have 1728 observations
+missing_data <- LL1[!complete.cases(LL1),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+LL1$day <- lubridate::floor_date(LL1$date, unit="day") #Bin by day
+head(LL1, n=70) #check the dataset start date
+tail(LL1) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+LL1 <- left_join(day, LL1) #join day and dataset
+str(LL1)
+
+#Group by day and calculate mean, max, min, amp
+LL1_daily <- LL1 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+
+```{r, include = F}
+LL2 <- read.csv("LowerLawrence_SN_20878651.csv")
+LL2$date <- lubridate::mdy_hm(LL2$Date_Time)
+plot(LL2$date, LL2$Temp)
+head(LL2, n = 50) #Need to remove first 7 values (not in the water yet)
+tail(LL2, n = 50) #looks ok
+LL2 <- LL2[c(8:1737,1740:35277),] 
+str(LL2) 
+missing_data <- LL2[!complete.cases(LL2),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+LL2$day <- lubridate::floor_date(LL2$date, unit="day") #Bin by day
+head(LL2, n=70) #check the dataset start date
+tail(LL2) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+LL2 <- left_join(day, LL2) #join day and dataset
+str(LL2)
+
+#Group by day and calculate mean, max, min, amp
+LL2_daily <- LL2 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+```
+
+```{r, include = F}
+LL3 <- read.csv("LowerLawrence_SN_20878670.csv")
+LL3$date <- lubridate::mdy_hm(LL3$Date_Time)
+plot(LL3$date, LL3$Temp)
+head(LL3, n = 50) #Need to remove first 6 values (not in the water yet)
+tail(LL3, n = 50) #looks ok 
+LL3 <- LL3[c(7:1737,1740:35316),] 
+str(LL3) 
+missing_data <- LL3[!complete.cases(LL3),]
+missing_data #No missing data
+
+#Position dataset into a full year data frame by daily steps
+LL3$day <- lubridate::floor_date(LL3$date, unit="day") #Bin by day
+head(LL3, n=70) #check the dataset start date
+tail(LL3) #check the dataset end date
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- as.data.frame(day) #convert "day" to data frame
+str(day) #check that it's a data frame
+LL3 <- left_join(day, LL3) #join day and dataset
+str(LL3)
+
+#Group by day and calculate mean, max, min, amp
+LL3_daily <- LL3 %>% 
+  group_by(day) %>% 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+
+
+```
+
+
+###AirTemp
+```{r}
+airtemp <- read.csv("SlaterButteAirTemp_2020_2021.csv")
+str(airtemp)
+plot(airtemp$TAVG)
+
+#Need to convert F to C, but can only perform this function once per download of the dataset becuase it'll do it again
+airtemp$TAVG <- fahrenheit.to.celsius(airtemp$TAVG)
+airtemp$TMAX <- fahrenheit.to.celsius(airtemp$TMAX)
+airtemp$TMIN <- fahrenheit.to.celsius(airtemp$TMIN)
+
+airtemp$date <- lubridate::mdy(airtemp$DATE)
+missing_data <- airtemp[!complete.cases(airtemp),] #No missing data
+missing_data
+airtemp$day <- lubridate::floor_date(airtemp$date, unit="day")
+str(airtemp)
+#cut to fit our data (1 July 2020 through 13 July 2021)
+airtemp <- airtemp[c(1:378),]
+str(airtemp)
+saveRDS(airtemp,"airtemp.rds")
+```
+
+##Dataframe Means
+```{r}
+daily_means <- cbind(day = day, AP1 = AP1_daily$mean_temp, AP3 = AP3_daily$mean_temp, APck = APck_daily$mean_temp, SP1 = SP1_daily$mean_temp, SP2 = SP2_daily$mean_temp, SPck = SPck_daily$mean_temp, Durazo = Durazo_daily$mean_temp, LS = LS_daily$mean_temp, LSck = LSck_daily$mean_temp, May = May_daily$mean_temp, MayCk = MayCk_daily$mean_temp, FG2 = FG2_daily$mean_temp, FG3 = FG3_daily$mean_temp, FGck = FGck_daily$mean_temp, GP1 = GP1_daily$mean_temp, GP2 = GP2_daily$mean_temp, GP3 = GP3_daily$mean_temp, GPck = GPck_daily$mean_temp, ULout = ULout_daily$mean_temp, UL1 = UL1_daily$mean_temp, UL3 = UL3_daily$mean_temp, ULck = ULck_daily$mean_temp, LL1 = LL1_daily$mean_temp, LL2 = LL2_daily$mean_temp, LL3 = LL3_daily$mean_temp, airtemp = airtemp$TAVG)
+daily_means <- as.data.frame(daily_means)
+str(daily_means)
+#Not including AP2 because not enough data
+
+daily_means_long <- t(daily_means[,-c(1,27)]) #Take the daily means and put them into a dataframe formatted for MARSS (not a matrix yet)
+dim(daily_means_long) #check we did that right
+covariate <- t(daily_means[,c(27)]) #Do the same for the covariates
+
+saveRDS(daily_means_long,'daily_means_long.rds')
+saveRDS(covariate,"covariate.rds")
+
+```
+
+#MaxTemps
+```{r}
+daily_max <- cbind(day = day, AP1 = AP1_daily$max_temp, AP3 = AP3_daily$max_temp, APck = APck_daily$max_temp, SP1 = SP1_daily$max_temp, SP2 = SP2_daily$max_temp, SPck = SPck_daily$max_temp, Durazo = Durazo_daily$max_temp, LS = LS_daily$max_temp, LSck = LSck_daily$max_temp, May = May_daily$max_temp, MayCk = MayCk_daily$max_temp, FG2 = FG2_daily$max_temp, FG3 = FG3_daily$max_temp, FGck = FGck_daily$max_temp, GP1 = GP1_daily$max_temp, GP2 = GP2_daily$max_temp, GP3 = GP3_daily$max_temp, GPck = GPck_daily$max_temp, ULout = ULout_daily$max_temp, UL1 = UL1_daily$max_temp, UL3 = UL3_daily$max_temp, ULck = ULck_daily$max_temp, LL1 = LL1_daily$max_temp, LL2 = LL2_daily$max_temp, LL3 = LL3_daily$max_temp, airtemp = airtemp$TAVG)
+daily_max <- as.data.frame(daily_max)
+daily_max_long <- t(daily_max[,-c(1,27)])
+saveRDS(daily_max_long,"daily_max_long.rds")
+```
+
+##MinTemps
+```{r}
+daily_min <- cbind(day = day, AP1 = AP1_daily$min_temp, AP3 = AP3_daily$min_temp, APck = APck_daily$min_temp, SP1 = SP1_daily$min_temp, SP2 = SP2_daily$min_temp, SPck = SPck_daily$min_temp, Durazo = Durazo_daily$min_temp, LS = LS_daily$min_temp, LSck = LSck_daily$min_temp, May = May_daily$min_temp, MayCk = MayCk_daily$min_temp, FG2 = FG2_daily$min_temp, FG3 = FG3_daily$min_temp, FGck = FGck_daily$min_temp, GP1 = GP1_daily$min_temp, GP2 = GP2_daily$min_temp, GP3 = GP3_daily$min_temp, GPck = GPck_daily$min_temp, ULout = ULout_daily$min_temp, UL1 = UL1_daily$min_temp, UL3 = UL3_daily$min_temp, ULck = ULck_daily$min_temp, LL1 = LL1_daily$min_temp, LL2 = LL2_daily$min_temp, LL3 = LL3_daily$min_temp, airtemp = airtemp$TAVG)
+daily_min <- as.data.frame(daily_min)
+daily_min_long <- t(daily_min[,-c(1,27)])
+saveRDS(daily_min_long,"daily_min_long.rds")
+```
+
+
+
