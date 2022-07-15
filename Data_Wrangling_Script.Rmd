@@ -21,7 +21,6 @@ library(MASS)
 library(forecast)
 library(zoo)
 library(imputeTS) 
-library(WaveletComp)
 ```
 
 # Pond Data: Cleaning datasets and aligning dates
