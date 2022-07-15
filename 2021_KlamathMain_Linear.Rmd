@@ -7,23 +7,21 @@ output:
 ---
 
 ```{r, include=F}
-knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE,echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+# Data wrangling packages
 library(tidyverse)
+library(ggplot2)
 library(lubridate)
 library(patchwork)
 library(astsa)
-library(forecast)
-library(dplyr)
-library(pander)
+
+# Time series analysis packages
 library(MARSS)
 library(MASS)
-library(gridExtra)
-library(weathermetrics)
-library(ggplot2)
+library(forecast)
 library(zoo)
 library(imputeTS) 
 library(WaveletComp)
-library(magick)
 ```
 
 

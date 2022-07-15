@@ -5,7 +5,8 @@ output:
   html_document: default
 ---
 
-```{r}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 # data wrangling
 library(xtable)
 library(tidyverse)
@@ -13,19 +14,20 @@ library(tidyverse)
 # time series packages
 library(MARSS)
 ```
+
 # Import derived data
 
 From Dryad repository
 See README files for more detailed metadata
 ```{r echo = T, results = "hide", messages = F}
-# Water temperature = response variable
+# Water temperature - response variable
 # Matrix of pond, creek, and Klamath River temperatures summarized as daily mean temperature 
 # Includes data from 1 July 2020 to 13 July 2021 
 daily_temp_means <- readRDS('daily_means_long_klamath.rds')
 transformed_daily_temp_means <- readRDS('transformed_dat_klamath.rds')
 transformed_daily_temp_means <- as.data.frame(t(transformed_daily_temp_means))
 
-# Air tempertaure = covariate data
+# Air temperature - covariate data
 # Matrix of air temperatures summarized as daily mean temperature
 # Includes data from 1 July 2020 to 13 July 2021 
 covariate <- readRDS('covariate.rds')
