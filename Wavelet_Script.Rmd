@@ -27,7 +27,7 @@ library(WaveletComp)
 #Import historical data
 #ALEXANDER
 ##Read in Data
-```{r}
+```{r, results = F}
 # Water temperature - response variable
 # Hourly temperature time series dataset from Alexander Pond called "APH" (Alexander Pond Historical) 
 # Includes data from 16 December 2010 to 24 November 2021
@@ -95,6 +95,7 @@ par(mar=c(4,4,4,4))
 scatter.smooth(forecast_fit$fitted,forecast_fit$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
 ```
 
+
 ##Smooth interpolated data
 ```{r, cache = TRUE}
 #Interpolate missing values using a Kalman filter (=smoother)
@@ -107,7 +108,7 @@ lines(y,col="black")
 ```
 
 ##Format interpolated time series into a dataframe
-```{r}
+```{r, results = F}
 #Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates 
 x <- as.data.frame(y_inter) #change y_inter from a ts object to a dataframe
 x$ID <- seq.int(nrow(x)) #add a unique ID
@@ -115,9 +116,13 @@ date <- as.data.frame(APH$hour) #make the unique "hour" index from APH into a se
 date$ID <- seq.int(nrow(date)) #create unique ID that aligns with x
 y_inter_df <- merge(x,date,"ID") #merge the two dataframes
 colnames(y_inter_df)<-c("ID","temp","date") #rename columns
-saveRDS(y_inter_df,"y_inter_df")
+saveRDS(y_inter_df,"y_inter_df.rds")
 ```
-
+##Check for NAs
+```{r}
+missing_data <- y_inter_df[!complete.cases(y_inter_df),] 
+missing_data 
+```
 ##Wavelet
 ```{r}
 APH.w <- analyze.wavelet(y_inter_df, "temp",
@@ -126,6 +131,7 @@ APH.w <- analyze.wavelet(y_inter_df, "temp",
                         make.pval = TRUE, n.sim = 1000,
                         date.format = "%Y-%m-%d-%h") 
 str(APH.w)
+saveRDS(APH.w,"APH.w.rds")
 ```
 
 ##Wavelet Image
@@ -137,13 +143,13 @@ wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond W
 
 ##Pull 24 hr period
 ```{r}
-APH.w$Period 
 plot.ts(APH.w$Power[71,])
+
 ```
 
 #STENDER
 ##Read in Data
-```{r}
+```{r, results = F}
 # Water temperature - response variable
 # Hourly temperature time series dataset from Stender Pond called "SPH" (Stender Pond Historical) 
 # Includes data from 16 December 2010 to 24 November 2021
@@ -225,7 +231,7 @@ lines(y2,col="black")
 ```
 
 ##Format interpolated time series into a dataframe
-```{r}
+```{r, results = F}
 #Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates (
 x2 <- as.data.frame(y_inter2) #change y_inter from a ts to a dataframe
 x2$ID <- seq.int(nrow(x2)) #add a unique ID, check it is correct length
@@ -233,9 +239,13 @@ date2 <- as.data.frame(SPH$hour) #make the unique "hour" index from SPH into a s
 date2$ID <- seq.int(nrow(date2)) #give that a unique ID that aligns with x
 y_inter2_df <- merge(x2,date2,"ID") #merge the two dataframes
 colnames(y_inter2_df)<-c("ID","temp","date") #rename columns
-saveRDS(y_inter2_df,"y_inter2_df")
+saveRDS(y_inter2_df,"y_inter2_df.rds")
 ```
-
+##Check for NAs
+```{r}
+missing_data <- y_inter2_df[!complete.cases(y_inter2_df),] 
+missing_data 
+```
 ##Wavelet
 ```{r}
 #run the wavelet
@@ -245,6 +255,7 @@ SPH.w <- analyze.wavelet(y_inter2_df, "temp",
                         make.pval = TRUE, n.sim = 1000,
                         date.format = "%Y-%m-%d-%h") 
 str(SPH.w) # Output
+saveRDS(SPH.w,"SPH.w.rds")
 ```
 
 ##Wavelet Image
@@ -256,7 +267,7 @@ wt.image(SPH.w, color.key = "quantile", n.levels = 250, main = "Stender Pond Wav
 
 ##Pull 24 hr period
 ```{r}
-SPH.w$Period 0
+SPH.w$Period 
 plot.ts(SPH.w$Power[71,])
 ```
 

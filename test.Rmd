@@ -1,5 +1,12 @@
 ---
 title: "test"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 test
+```{r,results = F}
+APH <- read.csv("Alexander_Historical_2.csv")
+APH
+```
+
