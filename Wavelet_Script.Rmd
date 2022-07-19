@@ -115,6 +115,7 @@ date <- as.data.frame(APH$hour) #make the unique "hour" index from APH into a se
 date$ID <- seq.int(nrow(date)) #create unique ID that aligns with x
 y_inter_df <- merge(x,date,"ID") #merge the two dataframes
 colnames(y_inter_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter_df,"y_inter_df")
 ```
 
 ##Wavelet
@@ -136,8 +137,8 @@ wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond W
 
 ##Pull 24 hr period
 ```{r}
-my.w$Period 
-plot.ts(my.w$Power[71,])
+APH.w$Period 
+plot.ts(APH.w$Power[71,])
 ```
 
 #STENDER
@@ -232,6 +233,7 @@ date2 <- as.data.frame(SPH$hour) #make the unique "hour" index from SPH into a s
 date2$ID <- seq.int(nrow(date2)) #give that a unique ID that aligns with x
 y_inter2_df <- merge(x2,date2,"ID") #merge the two dataframes
 colnames(y_inter2_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter2_df,"y_inter2_df")
 ```
 
 ##Wavelet
@@ -254,7 +256,7 @@ wt.image(SPH.w, color.key = "quantile", n.levels = 250, main = "Stender Pond Wav
 
 ##Pull 24 hr period
 ```{r}
-my.w2$Period 0
-plot.ts(my.w2$Power[71,])
+SPH.w$Period 0
+plot.ts(SPH.w$Power[71,])
 ```
 
