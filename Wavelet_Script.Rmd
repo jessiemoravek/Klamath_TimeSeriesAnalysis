@@ -132,19 +132,57 @@ APH.w <- analyze.wavelet(y_inter_df, "temp",
                         date.format = "%Y-%m-%d-%h") 
 str(APH.w)
 saveRDS(APH.w,"APH.w.rds")
+
 ```
 
 ##Wavelet Image
 ```{r}
+#read in data as needed
+##Note: APH.w saved locally, NOT on github (too big)
+APH.w <- readRDS("APH.w.rds")
+
+png("Fig_APH_Wavelet.png", width = 800, height = 500)
 wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond Wavelet",  
          legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
          periodlab = "period (days)")
+dev.off()
 ```
 
 ##Pull 24 hr period
 ```{r}
-plot.ts(APH.w$Power[71,])
+#read in data as needed
+y_inter_df <- readRDS("y_inter_df.rds")
 
+#create a dataframe of power and of date
+power_day <- as.data.frame(APH.w$Power[71,])
+power_day <- cbind(power_day, y_inter_df$date)
+colnames(power_day) <- c("power","date")
+
+png("Fig_APH_Power.png",width = 800, height = 200)
+plot.ts(APH.w$Power[71,])
+ggplot()+
+  geom_line(data = power_day, aes(x = date, y = power))+
+  labs(x = "Date",
+       y = "Power")+
+  theme_classic()+
+  theme(text=element_text(size=16))
+dev.off()
+
+```
+##Put both graphs together
+```{r}
+layout(matrix(c(1,2), 2, 1),
+   widths=c(3,3), heights=c(2,1))
+
+wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond Wavelet",  
+         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
+         periodlab = "period (days)")
+ggplot()+
+  geom_line(data = power_day, aes(x = date, y = power))+
+  labs(x = "Date",
+       y = "Power")+
+  theme_classic()+
+  theme(text=element_text(size=16))
 ```
 
 #STENDER
@@ -260,14 +298,35 @@ saveRDS(SPH.w,"SPH.w.rds")
 
 ##Wavelet Image
 ```{r}
-wt.image(SPH.w, color.key = "quantile", n.levels = 250, main = "Stender Pond Wavelet",  
+#read in data as needed
+##Note: SPH.w saved locally, NOT on github (too big)
+SPH.w <- readRDS("SPH.w.rds")
+
+png("Fig_SPH_Wavelet.png", width = 800, height = 500)
+wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Stender Pond Wavelet",  
          legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
          periodlab = "period (days)")
+dev.off()
 ```
 
 ##Pull 24 hr period
 ```{r}
-SPH.w$Period 
-plot.ts(SPH.w$Power[71,])
+#read in data as needed
+y_inter2_df <- readRDS("y_inter2_df.rds")
+
+#create a dataframe of power and of date
+power_day2 <- as.data.frame(SPH.w$Power[71,])
+power_day2 <- cbind(power_day2, y_inter2_df$date)
+colnames(power_day2) <- c("power","date")
+
+png("Fig_SPH_Power.png",width = 800, height = 200)
+ggplot()+
+  geom_line(data = power_day2, aes(x = date, y = power))+
+  labs(x = "Date",
+       y = "Power")+
+  theme_classic()+
+  theme(text=element_text(size=16))
+dev.off()
+
 ```
 
