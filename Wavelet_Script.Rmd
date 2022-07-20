@@ -171,13 +171,13 @@ dev.off()
 ##Put both graphs together
 ```{r}
 layout(matrix(c(1,2), nrow=2),
-   heights=5:1.5, widths=8:8)
-par(mar=c(2,2,2,2))
-plot2
+   heights=6:1, widths=8:8)
+layout.show(n=2)
+par(mfrow=c(2,1))
 wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond Wavelet",  
          legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
          periodlab = "period (days)")
-plot2 <- ggplot()+
+ggplot()+
   geom_line(data = power_day, aes(x = date, y = power))+
   labs(x = "Date",
        y = "Power")+
