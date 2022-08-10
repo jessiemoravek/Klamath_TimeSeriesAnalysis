@@ -1,0 +1,165 @@
+---
+title: "ThermalBuffer_Script"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Data wrangling packages
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(patchwork)
+library(astsa)
+library(weathermetrics)
+library(car)
+
+# Time series analysis packages
+library(MARSS)
+library(MASS)
+library(forecast)
+library(zoo)
+library(imputeTS) 
+```
+
+#Summer boxplots
+##Data wrangling
+```{r}
+#Read in data
+daily_maxs_condensed <- readRDS('daily_maxs_condensed.RDS')
+daily_maxs_condensed <- as.data.frame(t(daily_maxs_condensed))
+daily_maxs_condensed <- daily_maxs_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
+
+#Create "day" sequence 
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
+day <- as.data.frame(day) #convert "day" to data frame
+
+#Attach day to data frame
+daily_maxs_condensed <- cbind(daily_maxs_condensed,day)
+
+#Format data long
+daily_max_long <- gather(daily_maxs_condensed, site, value, -day)
+data_summer <- daily_max_long %>%filter(day>'2020-07-15'& day < '2020-09-15')
+```
+
+##Seiad Creek 
+```{r}
+#Boxplot
+png("Fig_Seiad_Boxplot.png", width = 500, height = 400)
+ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
+  geom_boxplot(aes(x = site, value, col = day))+
+  theme_classic()+
+  theme(text=element_text(size=20))+
+  scale_x_discrete(name ="Site", 
+                   limits = c("AP","SP","Durazo","LS","May","SC"),
+                    labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
+                               "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
+  scale_y_continuous(name="Temperature (C)",limits=c(12.5, 22.5))
+dev.off()
+
+#ANOVA
+data_summer_SC <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
+shapiro.test(data_summer_SC$value) #check for normality
+leveneTest(value ~ site, data = data_summer_SC) #check for equal variances
+anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
+summary.aov(anova_SC)
+TukeyHSD(anova_SC) #posthoc analysis
+```
+
+##Horse Creek
+```{r}
+#Boxplot
+png("Fig_Horse_Boxplot.png", width = 500, height = 400)
+ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
+  geom_boxplot(aes(x = site, value, col = day))+
+  theme_classic()+
+  theme(text=element_text(size=20))+
+  scale_x_discrete(name ="Site", 
+                   limits = c("FG","UL","LL","GP","HC"),
+                    labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
+                               "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
+  scale_y_continuous(name="Temperature (C)",limits=c(12.5, 22.5))
+dev.off()
+
+#ANOVA
+data_summer_HC <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
+shapiro.test(data_summer_HC$value) #check for normality
+leveneTest(value ~ site, data = data_summer_HC) #check for equal variances
+anova_SC <- aov(value ~ site, data = data_summer_HC) #run one way anova
+summary.aov(anova_SC)
+TukeyHSD(anova_SC) #posthoc analysis
+
+```
+
+#Winter boxplots
+##Data wrangling
+```{r}
+#Read in data
+daily_mins_condensed <- readRDS('daily_mins_condensed.RDS')
+daily_mins_condensed <- as.data.frame(t(daily_mins_condensed))
+daily_mins_condensed <- daily_mins_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
+
+#Create "day" sequence 
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
+day <- as.data.frame(day) #convert "day" to data frame
+
+#Attach day to data frame
+daily_mins_condensed <- cbind(daily_mins_condensed,day)
+
+#Format data long
+daily_min_long <- gather(daily_mins_condensed, site, value, -day)
+data_winter <- daily_min_long %>%filter(day>'2020-12-15'& day < '2021-02-15')
+```
+
+##Seiad Creek 
+```{r}
+#Boxplot
+png("Fig_Seiad_Boxplot.png", width = 500, height = 400)
+ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")))+
+  geom_boxplot(aes(x = site, value, col = day))+
+  theme_classic()+
+  theme(text=element_text(size=20))+
+  scale_x_discrete(name ="Site", 
+                   limits = c("AP","SP","Durazo","LS","May","SC"),
+                    labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
+                               "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
+  scale_y_continuous(name="Temperature (C)",limits=c(4, 12))
+dev.off()
+
+#ANOVA
+data_winter_SC <- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
+shapiro.test(data_winter_SC$value) #check for normality
+leveneTest(value ~ site, data = data_winter_SC) #check for equal variances
+#variances not equal, need to transform
+data_winter_SC$trans <- log(data_winter_SC$value)
+leveneTest(trans ~ site, data = data_winter_SC)
+#variances equal with log transformation
+
+anova_SC2 <- aov(trans ~ site, data = data_winter_SC) #run one way anova
+summary.aov(anova_SC2)
+TukeyHSD(anova_SC2) #posthoc analysis
+```
+
+##Horse Creek
+```{r}
+#Boxplot
+png("Fig_Horse_Boxplot.png", width = 500, height = 400)
+ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
+  geom_boxplot(aes(x = site, value, col = day))+
+  theme_classic()+
+  theme(text=element_text(size=20))+
+  scale_x_discrete(name ="Site", 
+                   limits = c("FG","UL","LL","GP","HC"),
+                    labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
+                               "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
+  scale_y_continuous(name="Temperature (C)",limits=c(4, 12))
+dev.off()
+
+#ANOVA
+data_winter_HC <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
+shapiro.test(data_winter_HC$value) #check for normality
+leveneTest(value ~ site, data = data_winter_HC) #check for equal variances
+anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
+summary.aov(anova_HC2)
+TukeyHSD(anova_HC2) #posthoc analysis
+
+```

@@ -941,12 +941,28 @@ saveRDS(KSV_daily$mean_temp,'KSV_meantemps.rds')
 ```{r}
 daily_means <- cbind(AP1 = AP1_daily$mean_temp, AP3 = AP3_daily$mean_temp, APck = APck_daily$mean_temp, SP1 = SP1_daily$mean_temp, SP2 = SP2_daily$mean_temp, SPck = SPck_daily$mean_temp, Durazo = Durazo_daily$mean_temp, LS = LS_daily$mean_temp, LSck = LSck_daily$mean_temp, May = May_daily$mean_temp, MayCk = MayCk_daily$mean_temp, FG2 = FG2_daily$mean_temp, FG3 = FG3_daily$mean_temp, FGck = FGck_daily$mean_temp, GP1 = GP1_daily$mean_temp, GP2 = GP2_daily$mean_temp, GP3 = GP3_daily$mean_temp, GPck = GPck_daily$mean_temp, ULout = ULout_daily$mean_temp, UL1 = UL1_daily$mean_temp, UL3 = UL3_daily$mean_temp, ULck = ULck_daily$mean_temp, LL1 = LL1_daily$mean_temp, LL2 = LL2_daily$mean_temp, LL3 = LL3_daily$mean_temp, KSV = KSV_daily$mean_temp)
 daily_means <- as.data.frame(daily_means)
+saveRDS(daily_means,"daily_means.RDS")
+#Not including AP2 because not enough data
+```
+
+#Dataframes of min/max water temperatures
+```{r}
+#Max temps
+daily_maxs <- cbind(AP1 = AP1_daily$max_temp, AP3 = AP3_daily$max_temp, APck = APck_daily$max_temp, SP1 = SP1_daily$max_temp, SP2 = SP2_daily$max_temp, SPck = SPck_daily$max_temp, Durazo = Durazo_daily$max_temp, LS = LS_daily$max_temp, LSck = LSck_daily$max_temp, May = May_daily$max_temp, MayCk = MayCk_daily$max_temp, FG2 = FG2_daily$max_temp, FG3 = FG3_daily$max_temp, FGck = FGck_daily$max_temp, GP1 = GP1_daily$max_temp, GP2 = GP2_daily$max_temp, GP3 = GP3_daily$max_temp, GPck = GPck_daily$max_temp, ULout = ULout_daily$max_temp, UL1 = UL1_daily$max_temp, UL3 = UL3_daily$max_temp, ULck = ULck_daily$max_temp, LL1 = LL1_daily$max_temp, LL2 = LL2_daily$max_temp, LL3 = LL3_daily$max_temp, KSV = KSV_daily$max_temp)
+daily_maxs <- as.data.frame(daily_maxs)
+saveRDS(daily_maxs,"daily_maxs.RDS")
+#Not including AP2 because not enough data
+
+#Min temps
+daily_mins <- cbind(AP1 = AP1_daily$min_temp, AP3 = AP3_daily$min_temp, APck = APck_daily$min_temp, SP1 = SP1_daily$min_temp, SP2 = SP2_daily$min_temp, SPck = SPck_daily$min_temp, Durazo = Durazo_daily$min_temp, LS = LS_daily$min_temp, LSck = LSck_daily$min_temp, May = May_daily$min_temp, MayCk = MayCk_daily$min_temp, FG2 = FG2_daily$min_temp, FG3 = FG3_daily$min_temp, FGck = FGck_daily$min_temp, GP1 = GP1_daily$min_temp, GP2 = GP2_daily$min_temp, GP3 = GP3_daily$min_temp, GPck = GPck_daily$min_temp, ULout = ULout_daily$min_temp, UL1 = UL1_daily$min_temp, UL3 = UL3_daily$min_temp, ULck = ULck_daily$min_temp, LL1 = LL1_daily$min_temp, LL2 = LL2_daily$min_temp, LL3 = LL3_daily$min_temp, KSV = KSV_daily$min_temp)
+daily_mins <- as.data.frame(daily_mins)
+saveRDS(daily_mins,"daily_mins.RDS")
 #Not including AP2 because not enough data
 ```
 
 
 #Cleaning dataframe
-## 1) For ponds with more than one sensors, drop time series with (many) gaps. 
+## 1) For ponds/creeks with more than one sensors, drop time series with (many) gaps. 
 ## 2) Then take mean across replicate sensors, so that we end up with 1 time series per habitat
 ###Alexander Pond
 ```{r}
@@ -973,6 +989,8 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = color, labels = c("SP1","SP2"))
 #both ok, need to take average
 daily_means$SP <- rowMeans(daily_means[,c('SP1', 'SP2')], na.rm=TRUE)
+daily_maxs$SP <- rowMeans(daily_maxs[,c('SP1', 'SP2')], na.rm=TRUE)
+daily_mins$SP <- rowMeans(daily_mins[,c('SP1', 'SP2')], na.rm=TRUE)
 
 color <- c("SP1" = "blue", "SP2" = "red", SP = "black")
 daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1009,6 +1027,8 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = color, labels = c("GP1","GP2","GP3"))
 #need to remove GP1
 daily_means$GP <- rowMeans(daily_means[,c('GP2', 'GP3')], na.rm=TRUE)
+daily_maxs$GP <- rowMeans(daily_maxs[,c('GP2', 'GP3')], na.rm=TRUE)
+daily_mins$GP <- rowMeans(daily_mins[,c('GP2', 'GP3')], na.rm=TRUE)
 
 color <- c("GP" = "black", "GP2" = "red", "GP3" = "green")
 daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1033,6 +1053,8 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = color, labels = c("ULout","UL1","UL3"))
 #need to remove UL1
 daily_means$UL <- rowMeans(daily_means[,c('ULout', 'UL3')], na.rm=TRUE)
+daily_maxs$UL <- rowMeans(daily_maxs[,c('ULout', 'UL3')], na.rm=TRUE)
+daily_mins$UL <- rowMeans(daily_mins[,c('ULout', 'UL3')], na.rm=TRUE)
 
 color <- c("ULout" = "blue", "UL" = "black", "UL3" = "green")
 daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1057,6 +1079,8 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = color, labels = c("LL1","LL2","LL3"))
 #all ok
 daily_means$LL <- rowMeans(daily_means[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
+daily_maxs$LL <- rowMeans(daily_maxs[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
+daily_mins$LL <- rowMeans(daily_mins[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
 
 color <- c("LL1" = "blue", "LL2" = "red", "LL3" = "green", 'LL' = "black")
 daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1082,6 +1106,8 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = color, labels = c("APck","SPck","LSck","MayCk"))
 #need to remove APck and SPck
 daily_means$SC <-  rowMeans(daily_means[,c('LSck','MayCk')], na.rm=TRUE)
+daily_maxs$SC <- rowMeans(daily_maxs[,c('LSck','MayCk')], na.rm=TRUE)
+daily_mins$SC <- rowMeans(daily_mins[,c('LSck','MayCk')], na.rm=TRUE)
 
 color <- c("SC" = "black","LSck" = "green", "MayCk"="orange")
 daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1105,6 +1131,8 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = color, labels = c("FGck","GPck","ULck"))
 #need to remove GPck
 daily_means$HC <- rowMeans(daily_means[,c('ULck','FGck')], na.rm=TRUE)
+daily_maxs$HC <- rowMeans(daily_maxs[,c('ULck','FGck')], na.rm=TRUE)
+daily_mins$HC <- rowMeans(daily_mins[,c('ULck','FGck')], na.rm=TRUE)
 
 color <- c("FGck" = "blue", "ULck" = "green", "HC" = "black")
 daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1117,14 +1145,29 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
 ```
 #Matrix of transformed data with 12 sites (daily_means_condensed)
 ```{r}
+#Mean
 daily_means_condensed <- cbind(AP = daily_means$AP3, SP = daily_means$SP, Durazo = daily_means$Durazo, LS = daily_means$LS, May = daily_means$May, FG = daily_means$FG3, GP = daily_means$GP, UL = daily_means$UL, LL = daily_means$LL, SC = daily_means$SC, HC = daily_means$HC, KSV = daily_means$KSV)
 daily_means_condensed <- as.matrix(t(daily_means_condensed))
+
+#Max
+daily_maxs_condensed <- cbind(AP = daily_maxs$AP3, SP = daily_maxs$SP, Durazo = daily_maxs$Durazo, LS = daily_maxs$LS, May = daily_maxs$May, FG = daily_maxs$FG3, GP = daily_maxs$GP, UL = daily_maxs$UL, LL = daily_maxs$LL, SC = daily_maxs$SC, HC = daily_maxs$HC, KSV = daily_maxs$KSV)
+daily_maxs_condensed <- as.matrix(t(daily_maxs_condensed))
+
+#Min
+daily_mins_condensed <- cbind(AP = daily_mins$AP3, SP = daily_mins$SP, Durazo = daily_mins$Durazo, LS = daily_mins$LS, May = daily_mins$May, FG = daily_mins$FG3, GP = daily_mins$GP, UL = daily_mins$UL, LL = daily_mins$LL, SC = daily_mins$SC, HC = daily_mins$HC, KSV = daily_mins$KSV)
+daily_mins_condensed <- as.matrix(t(daily_mins_condensed))
 ```
 
 #Final Dataframes
 ```{r}
 str(daily_means_condensed) #Matrix of mean daily water temperatures for 9 ponds, 2 creeks, and mainstem Klamath from 1 July 2020 to 13 July 2021
 saveRDS(daily_means_condensed, "daily_means_condensed.rds")
+
+str(daily_maxs_condensed)
+saveRDS(daily_maxs_condensed, "daily_maxs_condensed.rds") #Matrix of daily maximum temps
+
+str(daily_mins_condensed)
+saveRDS(daily_mins_condensed, "daily_mins_condensed.rds") #Matrix of daily minimum temps
 
 covariate <- (t(airtemp$TAVG)) #Matrix of mean daily air temperatures from 1 July 2020 to 13 July 2021
 str(covariate)
