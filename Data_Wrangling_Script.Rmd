@@ -945,21 +945,6 @@ saveRDS(daily_means,"daily_means.RDS")
 #Not including AP2 because not enough data
 ```
 
-#Dataframes of min/max water temperatures
-```{r}
-#Max temps
-daily_maxs <- cbind(AP1 = AP1_daily$max_temp, AP3 = AP3_daily$max_temp, APck = APck_daily$max_temp, SP1 = SP1_daily$max_temp, SP2 = SP2_daily$max_temp, SPck = SPck_daily$max_temp, Durazo = Durazo_daily$max_temp, LS = LS_daily$max_temp, LSck = LSck_daily$max_temp, May = May_daily$max_temp, MayCk = MayCk_daily$max_temp, FG2 = FG2_daily$max_temp, FG3 = FG3_daily$max_temp, FGck = FGck_daily$max_temp, GP1 = GP1_daily$max_temp, GP2 = GP2_daily$max_temp, GP3 = GP3_daily$max_temp, GPck = GPck_daily$max_temp, ULout = ULout_daily$max_temp, UL1 = UL1_daily$max_temp, UL3 = UL3_daily$max_temp, ULck = ULck_daily$max_temp, LL1 = LL1_daily$max_temp, LL2 = LL2_daily$max_temp, LL3 = LL3_daily$max_temp, KSV = KSV_daily$max_temp)
-daily_maxs <- as.data.frame(daily_maxs)
-saveRDS(daily_maxs,"daily_maxs.RDS")
-#Not including AP2 because not enough data
-
-#Min temps
-daily_mins <- cbind(AP1 = AP1_daily$min_temp, AP3 = AP3_daily$min_temp, APck = APck_daily$min_temp, SP1 = SP1_daily$min_temp, SP2 = SP2_daily$min_temp, SPck = SPck_daily$min_temp, Durazo = Durazo_daily$min_temp, LS = LS_daily$min_temp, LSck = LSck_daily$min_temp, May = May_daily$min_temp, MayCk = MayCk_daily$min_temp, FG2 = FG2_daily$min_temp, FG3 = FG3_daily$min_temp, FGck = FGck_daily$min_temp, GP1 = GP1_daily$min_temp, GP2 = GP2_daily$min_temp, GP3 = GP3_daily$min_temp, GPck = GPck_daily$min_temp, ULout = ULout_daily$min_temp, UL1 = UL1_daily$min_temp, UL3 = UL3_daily$min_temp, ULck = ULck_daily$min_temp, LL1 = LL1_daily$min_temp, LL2 = LL2_daily$min_temp, LL3 = LL3_daily$min_temp, KSV = KSV_daily$min_temp)
-daily_mins <- as.data.frame(daily_mins)
-saveRDS(daily_mins,"daily_mins.RDS")
-#Not including AP2 because not enough data
-```
-
 
 #Cleaning dataframe
 ## 1) For ponds/creeks with more than one sensors, drop time series with (many) gaps. 
