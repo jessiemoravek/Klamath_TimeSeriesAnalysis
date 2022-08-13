@@ -1158,3 +1158,4 @@ covariate <- (t(airtemp$TAVG)) #Matrix of mean daily air temperatures from 1 Jul
 str(covariate)
 saveRDS(covariate, "covariate.rds")
 ```
+

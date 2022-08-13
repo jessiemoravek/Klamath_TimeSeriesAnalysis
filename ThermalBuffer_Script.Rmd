@@ -170,61 +170,6 @@ report(anova_HC2)
 ```
 
 #Daily Buffering
-
-##SCRAP Data wrangling 
-```{r}
-daily_means <- readRDS("daily_means.rds") #mean daily temp values for all sensors
-daily_means_condensed <- readRDS("daily_means_condensed.rds") #mean daily temp values averaged per site 
-daily_means_condensed <- as.data.frame(t(daily_means_condensed))
-
-#Add individual creek sensors back into condensed dataset 
-daily_means_condensed$APck <- cbind(daily_means$APck)
-daily_means_condensed$SPck <- cbind(daily_means$SPck)
-daily_means_condensed$LSck <- cbind(daily_means$LSck)
-daily_means_condensed$MayCk <- cbind(daily_means$MayCk)
-daily_means_condensed$FGck <- cbind(daily_means$FGck)
-daily_means_condensed$GPck <- cbind(daily_means$GPck)
-daily_means_condensed$ULck <- cbind(daily_means$ULck)
-daily_means_condensed <- daily_means_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
-
-#Create "day" sequence 
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
-day <- as.data.frame(day) #convert "day" to data frame
-daily_means_condensed <-cbind(daily_means_condensed,day)
-
-#Format data long
-daily_means_summer <- daily_means_condensed %>%filter(day>'2020-07-15'& day < '2020-09-15')
-
-#Create a function for coefficient of variance (CV)
-CV <- function(x){
-        (sd(x)/mean(x))*100
-}
-
-#Alexander Pond 
-CV_diff_AP <- CV(daily_means_summer$APck)/CV(daily_means_summer$AP)
-
-#Stender Pond
-CV_diff_SP <- CV(daily_means_summer$SPck)/CV(daily_means_summer$SP)
-
-#Durazo Pond
-#no paired site, creek dry at this point in July
-
-#Lower Seiad 
-#NA values for LScreek, used May Pond creek (close by)
-CV_diff_LS <- CV(daily_means_summer$MayCk)/CV(daily_means_summer$LS)
-
-#May Pond
-CV_diff_May <- CV(daily_means_summer$MayCk)/CV(daily_means_summer$May)
-
-#Fish Gulch
-CV_diff_FG <- CV(daily_means_summer$FGck)/CV(daily_means_summer$FG)
-
-#Goodman Pond
-#NA vlues for Goodman creek, used 
-CV_diff_GP <- CV(daily_means_summer$GPck)/CV(daily_means_summer$GP)
-
-```
-
 ##Data wrangling
 ```{r}
 daily_means_condensed <- readRDS("daily_means_condensed.rds") #mean daily temp values averaged per site 
