@@ -11,9 +11,9 @@ library(lubridate)
 library(patchwork)
 library(astsa)
 library(weathermetrics)
-library(car)
 library(report)
 library(multcomp)
+library(MetBrewer)
 
 # Time series analysis packages
 library(MARSS)
@@ -256,7 +256,7 @@ CV_diff_UL <- CV(daily_means_summer$HC)/CV(daily_means_summer$UL)
 CV_diff_LL <- CV(daily_means_summer$HC)/CV(daily_means_summer$LL)
 ```
 
-
+##CV Data Table
 ```{r}
 data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Horse Creek","Horse Creek","Horse Creek","Horse Creek"),
            CreekCV=round(c(CV_SC,CV_SC,CV_SC,CV_SC,CV_SC,CV_HC,CV_HC,CV_HC,CV_HC),2),
@@ -273,4 +273,39 @@ data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seia
                         CV_diff_LL),2))
 
 ```
+#Time Series
+```{r}
+daily_means_condensed
+mycolors <- met.brewer(name="Archambault",n=4,type="discrete")
 
+p1 <- ggplot()+
+  geom_line(data = daily_means_condensed, aes(x = day, y = AP), color ="#88a0dc", size = 1) +
+  labs(title = "(a) Alexander Pond", x = "Date", y = "Temperature (C)")+
+  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+p2 <- ggplot()+
+  geom_line(data = daily_means_condensed, aes(x = day, y = UL), color = "#ed968c", size = 1) +
+  labs(title = "(c) Upper Lawrence Pond", x = "Date", y = "Temperature (C)")+
+  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+p3 <- ggplot()+
+  geom_line(data = daily_means_condensed, aes(x = day, y = SC), color = "#e78429", size = 1) +
+  labs(title = "(b) Seiad Creek", x = "Date", y = "Temperature (C)")+
+  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+p4 <- ggplot()+
+  geom_line(data = daily_means_condensed, aes(x = day, y = HC), color = "#f9d14a", size = 1) +
+  labs(title = "(d) Horse Creek", x = "Date", y = "Temperature (C)")+
+  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+png("Fig_TempTimeSeries.png",width = 1000, height = 600)
+(p1 + p3) / (p2 + p4)
+dev.off()
+
+
+```

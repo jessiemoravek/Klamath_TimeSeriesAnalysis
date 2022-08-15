@@ -944,6 +944,19 @@ daily_means <- as.data.frame(daily_means)
 saveRDS(daily_means,"daily_means.RDS")
 #Not including AP2 because not enough data
 ```
+```{r}
+daily_maxs <- cbind(AP1 = AP1_daily$max_temp, AP3 = AP3_daily$max_temp, APck = APck_daily$max_temp, SP1 = SP1_daily$max_temp, SP2 = SP2_daily$max_temp, SPck = SPck_daily$max_temp, Durazo = Durazo_daily$max_temp, LS = LS_daily$max_temp, LSck = LSck_daily$max_temp, May = May_daily$max_temp, MayCk = MayCk_daily$max_temp, FG2 = FG2_daily$max_temp, FG3 = FG3_daily$max_temp, FGck = FGck_daily$max_temp, GP1 = GP1_daily$max_temp, GP2 = GP2_daily$max_temp, GP3 = GP3_daily$max_temp, GPck = GPck_daily$max_temp, ULout = ULout_daily$max_temp, UL1 = UL1_daily$max_temp, UL3 = UL3_daily$max_temp, ULck = ULck_daily$max_temp, LL1 = LL1_daily$max_temp, LL2 = LL2_daily$max_temp, LL3 = LL3_daily$max_temp, KSV = KSV_daily$max_temp)
+daily_maxs <- as.data.frame(daily_maxs)
+saveRDS(daily_maxs,"daily_maxs.RDS")
+```
+
+
+```{r}
+daily_mins <- cbind(AP1 = AP1_daily$min_temp, AP3 = AP3_daily$min_temp, APck = APck_daily$min_temp, SP1 = SP1_daily$min_temp, SP2 = SP2_daily$min_temp, SPck = SPck_daily$min_temp, Durazo = Durazo_daily$min_temp, LS = LS_daily$min_temp, LSck = LSck_daily$min_temp, May = May_daily$min_temp, MayCk = MayCk_daily$min_temp, FG2 = FG2_daily$min_temp, FG3 = FG3_daily$min_temp, FGck = FGck_daily$min_temp, GP1 = GP1_daily$min_temp, GP2 = GP2_daily$min_temp, GP3 = GP3_daily$min_temp, GPck = GPck_daily$min_temp, ULout = ULout_daily$min_temp, UL1 = UL1_daily$min_temp, UL3 = UL3_daily$min_temp, ULck = ULck_daily$min_temp, LL1 = LL1_daily$min_temp, LL2 = LL2_daily$min_temp, LL3 = LL3_daily$min_temp, KSV = KSV_daily$min_temp)
+daily_mins <- as.data.frame(daily_mins)
+saveRDS(daily_mins,"daily_mins.RDS")
+```
+
 
 
 #Cleaning dataframe
@@ -1134,6 +1147,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
 daily_means_condensed <- cbind(AP = daily_means$AP3, SP = daily_means$SP, Durazo = daily_means$Durazo, LS = daily_means$LS, May = daily_means$May, FG = daily_means$FG3, GP = daily_means$GP, UL = daily_means$UL, LL = daily_means$LL, SC = daily_means$SC, HC = daily_means$HC, KSV = daily_means$KSV)
 daily_means_condensed <- as.matrix(t(daily_means_condensed))
 
+
 #Max
 daily_maxs_condensed <- cbind(AP = daily_maxs$AP3, SP = daily_maxs$SP, Durazo = daily_maxs$Durazo, LS = daily_maxs$LS, May = daily_maxs$May, FG = daily_maxs$FG3, GP = daily_maxs$GP, UL = daily_maxs$UL, LL = daily_maxs$LL, SC = daily_maxs$SC, HC = daily_maxs$HC, KSV = daily_maxs$KSV)
 daily_maxs_condensed <- as.matrix(t(daily_maxs_condensed))
@@ -1158,4 +1172,6 @@ covariate <- (t(airtemp$TAVG)) #Matrix of mean daily air temperatures from 1 Jul
 str(covariate)
 saveRDS(covariate, "covariate.rds")
 ```
+
+
 
