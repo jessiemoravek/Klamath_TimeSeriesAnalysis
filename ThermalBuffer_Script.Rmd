@@ -313,23 +313,27 @@ dev.off()
 
 
 ```
-#May Pond Examplie
+#May Pond Example
 ```{r}
-readRDS("May.rds")
-data_August <- daily_means_condensed %>%filter(day>'2020-08-01'& day < '2020-08-31')
-May_August <- data_August[,c("May","day")]         
-SC_August <- data_August[,c("SC","day")] 
+May <- readRDS("May.rds")
+MayCk <- readRDS("MayCk.rds")
+
+May_August <-May %>%filter(day>'2020-08-01'& day < '2020-08-31')
+May_August <- May_August[,c("Temp","date")]         
+MayCk_August <-MayCk %>%filter(day>'2020-08-01'& day < '2020-08-31')
+MayCk_August <- MayCk_August[,c("Temp","date")] 
 
 png("Fig_MayPond.png", width = 700, height = 400)
 ggplot()+
-  geom_line(data = May_August, aes(x = day, y = May, color = "May Pond"))+
-  geom_line(data = SC_August, aes(x = day, y = SC, color = "Seiad Creek"))+
+  geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
+  geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
   labs(x = "Date",
-       y = "Temperature (C)")+
+       y = "Hourly Temperature (C)",
+       title = "May Pond and Seiad Creek, August 2020")+
   theme_classic()+
-  theme(text=element_text(size=20), legend.position = "bottom")+
+  theme(text=element_text(size=16), legend.position = "bottom")+
   scale_colour_manual("", values = c("May Pond"="steelblue", "Seiad Creek"="salmon")) +
-  scale_y_continuous("Temperature (C)") 
+  scale_y_continuous("Hourly Temperature (C)") 
 dev.off()
 ```
 
