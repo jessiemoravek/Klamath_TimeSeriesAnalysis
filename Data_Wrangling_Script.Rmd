@@ -329,6 +329,7 @@ May <- left_join(day, May) #join day and dataset
 May_daily <- May %>% 
   group_by(day) %>% 
   summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+saveRDS(May,"May.rds")
 ```
 
 ```{r, include = FALSE}
@@ -353,6 +354,8 @@ MayCk <- left_join(day, MayCk) #join day and dataset
 MayCk_daily <- MayCk %>% 
   group_by(day) %>% 
   summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+saveRDS(MayCk,"MayCk.rds")
+
 ```
 
 ###Fish Gulch

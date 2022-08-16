@@ -12,6 +12,7 @@ library(patchwork)
 library(astsa)
 library(weathermetrics)
 library(report)
+library(car)
 library(multcomp)
 library(MetBrewer)
 
@@ -46,17 +47,17 @@ data_summer <- daily_max_long %>%filter(day>'2020-07-15'& day < '2020-09-15')
 ###Seiad Creek 
 ```{r}
 #Boxplot
-png("Fig_SeiadSummer_Boxplot.png", width = 500, height = 400)
-ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
+b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
   geom_boxplot(aes(x = site, value, col = day))+
+  labs(title = "(a) Seiad Creek, 15 July - 15 September")+
   theme_classic()+
-  theme(text=element_text(size=20))+
+  theme(text=element_text(size=16), axis.title.x=element_blank())+
   scale_x_discrete(name ="Site", 
                    limits = c("AP","SP","Durazo","LS","May","SC"),
                     labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
                                "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
-  scale_y_continuous(name="Temperature (C)",limits=c(12.5, 22.5))
-dev.off()
+  scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
+
 
 #ANOVA
 data_summer_SC <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
@@ -71,17 +72,16 @@ report(anova_SC)
 ###Horse Creek
 ```{r}
 #Boxplot
-png("Fig_HorseSummer_Boxplot.png", width = 500, height = 400)
-ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
+b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
   geom_boxplot(aes(x = site, value, col = day))+
+  labs(title = "(b) Horse Creek, 15 July - 15 September")+
   theme_classic()+
-  theme(text=element_text(size=20))+
+  theme(text=element_text(size=16), axis.title.x=element_blank())+
   scale_x_discrete(name ="Site", 
                    limits = c("FG","UL","LL","GP","HC"),
                     labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
                                "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
-  scale_y_continuous(name="Temperature (C)",limits=c(12.5, 22.5))
-dev.off()
+  scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
 
 #ANOVA
 data_summer_HC <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
@@ -116,17 +116,16 @@ data_winter <- daily_min_long %>%filter(day>'2020-12-15'& day < '2021-02-15')
 ###Seiad Creek 
 ```{r}
 #Boxplot
-png("Fig_SeiadWinter_Boxplot.png", width = 500, height = 400)
-ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")))+
+b3 <- ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")))+
   geom_boxplot(aes(x = site, value, col = day))+
+  labs(title = "(c) Seiad Creek, 15 December - 15 February")+
   theme_classic()+
-  theme(text=element_text(size=20))+
+  theme(text=element_text(size=16))+
   scale_x_discrete(name ="Site", 
                    limits = c("AP","SP","Durazo","LS","May","SC"),
                     labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
                                "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
-  scale_y_continuous(name="Temperature (C)",limits=c(4, 12))
-dev.off()
+  scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
 
 #ANOVA
 data_winter_SC <- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
@@ -147,17 +146,16 @@ report(anova_SC2)
 ###Horse Creek
 ```{r}
 #Boxplot
-png("Fig_HorseWinter_Boxplot.png", width = 500, height = 400)
-ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
+b4 <- ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
   geom_boxplot(aes(x = site, value, col = day))+
+  labs(title = "(d) Horse Creek, 15 December - 15 February")+
   theme_classic()+
-  theme(text=element_text(size=20))+
+  theme(text=element_text(size=16))+
   scale_x_discrete(name ="Site", 
                    limits = c("FG","UL","LL","GP","HC"),
                     labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
                                "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
-  scale_y_continuous(name="Temperature (C)",limits=c(4, 12))
-dev.off()
+  scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
 
 #ANOVA
 data_winter_HC <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
@@ -167,6 +165,12 @@ anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
 summary.aov(anova_HC2)
 TukeyHSD(anova_HC2) #posthoc analysis
 report(anova_HC2)
+```
+##Boxplot Figure
+```{r}
+png("Fig_Boxplots.png",width = 1000, height = 600)
+(b1 + b2) / (b3 + b4)
+dev.off()
 ```
 
 #Daily Buffering
@@ -273,7 +277,7 @@ data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seia
                         CV_diff_LL),2))
 
 ```
-#Time Series
+#Time Series Examples Figure
 ```{r}
 daily_means_condensed
 mycolors <- met.brewer(name="Archambault",n=4,type="discrete")
@@ -281,25 +285,25 @@ mycolors <- met.brewer(name="Archambault",n=4,type="discrete")
 p1 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = AP), color ="#88a0dc", size = 1) +
   labs(title = "(a) Alexander Pond", x = "Date", y = "Temperature (C)")+
-  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5), axis.title.x=element_blank())
 p2 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = UL), color = "#ed968c", size = 1) +
   labs(title = "(c) Upper Lawrence Pond", x = "Date", y = "Temperature (C)")+
-  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
 p3 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = SC), color = "#e78429", size = 1) +
   labs(title = "(b) Seiad Creek", x = "Date", y = "Temperature (C)")+
-  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5), axis.title.x=element_blank())
 p4 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = HC), color = "#f9d14a", size = 1) +
   labs(title = "(d) Horse Creek", x = "Date", y = "Temperature (C)")+
-  scale_y_continuous(name="Temperature (C)",limits=c(0, 25))+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
 
@@ -309,3 +313,23 @@ dev.off()
 
 
 ```
+#May Pond Examplie
+```{r}
+readRDS("May.rds")
+data_August <- daily_means_condensed %>%filter(day>'2020-08-01'& day < '2020-08-31')
+May_August <- data_August[,c("May","day")]         
+SC_August <- data_August[,c("SC","day")] 
+
+png("Fig_MayPond.png", width = 700, height = 400)
+ggplot()+
+  geom_line(data = May_August, aes(x = day, y = May, color = "May Pond"))+
+  geom_line(data = SC_August, aes(x = day, y = SC, color = "Seiad Creek"))+
+  labs(x = "Date",
+       y = "Temperature (C)")+
+  theme_classic()+
+  theme(text=element_text(size=20), legend.position = "bottom")+
+  scale_colour_manual("", values = c("May Pond"="steelblue", "Seiad Creek"="salmon")) +
+  scale_y_continuous("Temperature (C)") 
+dev.off()
+```
+
