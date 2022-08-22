@@ -464,7 +464,7 @@ h2 <- ggplot()+
   theme(text=element_text(size=16), legend.position = "none")+
   scale_y_continuous("Hourly Temperature (C)") 
 
-png("Fig_AlexStenderHistorical.png",width = 1000, height = 600)
+png("Fig_AlexStenderHistorical.png",width = 1000, height = 400)
 (h1 + h2)
 dev.off()
 ```
