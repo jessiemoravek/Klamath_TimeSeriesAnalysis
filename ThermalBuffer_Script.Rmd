@@ -332,7 +332,7 @@ ggplot()+
        title = "May Pond and Seiad Creek, August 2020")+
   theme_classic()+
   theme(text=element_text(size=16), legend.position = "bottom")+
-  scale_colour_manual("", values = c("May Pond"="steelblue", "Seiad Creek"="salmon")) +
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
   scale_y_continuous("Hourly Temperature (C)") 
 dev.off()
 ```

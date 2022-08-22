@@ -445,24 +445,28 @@ missing_data
 ```{r}
 y_inter3_df <- readRDS("y_inter3_df.rds")
 y_inter4_df <- readRDS("y_inter4_df.rds")
+library(MetBrewer)
+mycolors <- met.brewer(name="Archambault",n=6,type="discrete")
+mycolors[1:6]
+print(mycolors)
 
 h1 <- ggplot()+
-  geom_line(data = y_inter3_df, aes(x = date, y = temp), color = "darkgreen")+
+  geom_line(data = y_inter3_df, aes(x = date, y = temp), color = "#7c4b73")+
   labs(x = "Year",
        y = "Hourly Temperature (C)",
        title = "Alexander Pond")+
   theme_classic()+
   theme(text=element_text(size=16), legend.position = "none")+
-  scale_y_continuous("Hourly Temperature (C)") 
+  scale_y_continuous("Hourly Temperature (C)", limits=c(0, 25)) 
 
 h2 <- ggplot()+
-  geom_line(data = y_inter4_df, aes(x = date, y = temp), color = "steelblue")+
+  geom_line(data = y_inter4_df, aes(x = date, y = temp), color = "#e78429")+
   labs(x = "Year",
        y = "Hourly Temperature (C)",
        title = "Stender Pond")+
   theme_classic()+
   theme(text=element_text(size=16), legend.position = "none")+
-  scale_y_continuous("Hourly Temperature (C)") 
+  scale_y_continuous("Hourly Temperature (C)", limits=c(0, 25)) 
 
 png("Fig_AlexStenderHistorical.png",width = 1000, height = 400)
 (h1 + h2)
