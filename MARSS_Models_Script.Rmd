@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(xtable)
 library(tidyverse)
 library(broom)
+library(forcats)
 
 # time series packages
 library(MARSS)
@@ -53,6 +54,7 @@ mod1$c = z_covariate
 mod1.fit = MARSS(z_daily_means_condensed, model=mod1)
 mod1_params =MARSSparamCIs(mod1.fit)
 MARSSparamCIs(mod1.fit)
+saveRDS(mod1_params,"mod1_params.RDS")
 ```
 
 ```{r}
@@ -214,19 +216,21 @@ data.frame(Model=c("mod1", "mod2", "mod3", "mod4"),
 
 #Plot Covariate Effects
 ```{r}
-mod1_params
+mod1_params <- readRDS("mod1_params.RDS")
 mod1_df <- broom::tidy(mod1_params)
+mod1_df_clip <- mod1_df[c(37:48),]
+mod1_df_clip$name <- c("Alexander","Stender","Durazo","LowerSeiad","May","FishGulch","Goodman","UpperLaw","LowerLaw","SeiadCreek","HorseCreek","KlamathRiver")
+mod1_df_ordered <- mod1_df_clip[c(1:5,10,6:9,11:12),]
 
-
-labels <- c("Alexander", "Durazo", "FishGulch", "Goodman","HorseCreek","Klamath","LLawrence","LowerSeiad","May","SeiadCreek","Stender","ULawrence")
-ggplot(data = mod1_df) + 
-  geom_pointrange(data = mod1_df[c(37:48),], aes(x = term, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
-  geom_hline(yintercept = 0) +
+png("Fig_AirTempEffects.png", width = 500, height = 300)
+ggplot()+
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
   labs(x = "Sites",
        y = "Air Temperature Effects") +
   ggtitle("Air Temperature Effects") +
   theme_classic()+
-  theme(text=element_text(size=20),axis.text.x=element_text(angle = 90, hjust = 1))+
-  scale_x_discrete(labels= labels)
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+dev.off()
 ```
 

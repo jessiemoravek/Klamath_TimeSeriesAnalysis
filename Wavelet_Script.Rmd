@@ -70,6 +70,8 @@ y_na <- ifelse(is.na(y),0,NA)
 fit <- auto.arima(y,trace=TRUE) #fit limited number of models (faster)
 summary(fit) #Take a closer look at the best fitted model
 forecast_fit <- forecast(y,model=fit) #Predict values using the calibration dataset
+saveRDS(forecast_fit1,"forecast_fit1.RDS")
+
 ```
 
 ##Plot interpolated data
@@ -117,6 +119,7 @@ date$ID <- seq.int(nrow(date)) #create unique ID that aligns with x
 y_inter_df <- merge(x,date,"ID") #merge the two dataframes
 colnames(y_inter_df)<-c("ID","temp","date") #rename columns
 saveRDS(y_inter_df,"y_inter_df.rds")
+y_inter_df <- readRDS("y_inter_df.rds")
 ```
 ##Check for NAs
 ```{r}
@@ -230,7 +233,7 @@ y_na2 <- ifelse(is.na(y2),0,NA)
 fit2 <- auto.arima(y2,trace=TRUE) #fit limited number of models (faster)
 summary(fit2) #Take a closer look at the best fitted model
 forecast_fit2 <- forecast(y2,model=fit2) #Predict values using the calibration dataset
-
+saveRDS(forecast_fit2,"forecast_fit2.RDS")
 ```
 
 ##Plot interpolated data
@@ -328,5 +331,141 @@ ggplot()+
   theme(text=element_text(size=16))
 dev.off()
 
+```
+
+#FIGURES
+##Alexander
+###Interpolate without z-scores
+```{r, cache = TRUE}
+#Create time-series object using non-transformed temperature values (Temp)
+APH_ts2 <- ts(APH$Temp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+
+#Run ARIMA to interpolate missing data
+y3 <- APH_ts2
+date_s3 <- APH$hour
+y_na3 <- ifelse(is.na(y3),0,NA)
+
+fit3 <- auto.arima(y3,trace=TRUE) #fit limited number of models (faster)
+summary(fit3) #Take a closer look at the best fitted model
+forecast_fit3 <- forecast(y3,model=fit3) #Predict values using the calibration dataset
+```
+
+###Check residuals of interpolated data
+```{r}
+checkresiduals(fit3) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
+
+#plot residuals versus fitted values (=check for heterosedasticity)
+par(mar=c(4,4,4,4))
+scatter.smooth(forecast_fit3$fitted,forecast_fit3$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
+```
+
+###Smooth interpolated data
+```{r, cache = TRUE}
+#Interpolate missing values using a Kalman filter (=smoother)
+y_inter3 <- na_kalman(y3,model=fit3$model) 
+
+#Plot the results
+par(mar=c(2,4,1,1))
+plot(y_inter3,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
+lines(y,col="black")
+```
+
+###Format interpolated time series into a dataframe
+```{r, results = F}
+#Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates 
+x3 <- as.data.frame(y_inter3) #change y_inter from a ts object to a dataframe
+x3$ID <- seq.int(nrow(x3)) #add a unique ID
+date3 <- as.data.frame(APH$hour) #make the unique "hour" index from APH into a separate dataframe
+date3$ID <- seq.int(nrow(date3)) #create unique ID that aligns with x
+y_inter3_df <- merge(x3,date3,"ID") #merge the two dataframes
+colnames(y_inter3_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter3_df,"y_inter3_df.rds")
+```
+###Check for NAs
+```{r}
+missing_data <- y_inter3_df[!complete.cases(y_inter3_df),] 
+missing_data 
+```
+
+##Stender
+###Interpolate without z-scores
+```{r, results = F}
+#Convert to time series
+SPH_ts2 <- ts(SPH$Temp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+
+#Run ARIMA to interpolate missing data
+y4 <- SPH_ts2
+date_s4 <- SPH$hour
+y_na4 <- ifelse(is.na(y4),0,NA)
+
+fit4 <- auto.arima(y4,trace=TRUE) #fit limited number of models (faster)
+summary(fit4) #Take a closer look at the best fitted model
+forecast_fit4 <- forecast(y4,model=fit4) #Predict values using the calibration dataset
+saveRDS(forecast_fit4,"forecast_fit4.RDS")
+```
+
+##Check residuals of interpolated data
+```{r}
+#Check residuals of the interpolation process
+checkresiduals(fit4) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
+
+#plot residuals versus fitted values (=check for heterosedasticity)
+par(mar=c(4,4,4,4))
+scatter.smooth(forecast_fit4$fitted,forecast_fit4$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
+```
+
+##Smooth interpolated data
+```{r, cache = TRUE}
+#Interpolate missing values using a Kalman filter (=smoother)
+y_inter4 <- na_kalman(y4,model=fit4$model) 
+
+#Plot the results
+par(mar=c(2,4,1,1))
+plot(y_inter4,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
+lines(y2,col="black")
+```
+
+##Format interpolated time series into a dataframe
+```{r, results = F}
+#Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates (
+x4 <- as.data.frame(y_inter4) #change y_inter from a ts to a dataframe
+x4$ID <- seq.int(nrow(x4)) #add a unique ID, check it is correct length
+date4 <- as.data.frame(SPH$hour) #make the unique "hour" index from SPH into a separate dataframe
+date4$ID <- seq.int(nrow(date4)) #give that a unique ID that aligns with x
+y_inter4_df <- merge(x4,date4,"ID") #merge the two dataframes
+colnames(y_inter4_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter4_df,"y_inter4_df.rds")
+```
+##Check for NAs
+```{r}
+missing_data <- y_inter4_df[!complete.cases(y_inter4_df),] 
+missing_data 
+```
+
+```{r}
+y_inter3_df <- readRDS("y_inter3_df.rds")
+y_inter4_df <- readRDS("y_inter4_df.rds")
+
+h1 <- ggplot()+
+  geom_line(data = y_inter3_df, aes(x = date, y = temp), color = "darkgreen")+
+  labs(x = "Year",
+       y = "Hourly Temperature (C)",
+       title = "Alexander Pond")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "none")+
+  scale_y_continuous("Hourly Temperature (C)") 
+
+h2 <- ggplot()+
+  geom_line(data = y_inter4_df, aes(x = date, y = temp), color = "steelblue")+
+  labs(x = "Year",
+       y = "Hourly Temperature (C)",
+       title = "Stender Pond")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "none")+
+  scale_y_continuous("Hourly Temperature (C)") 
+
+png("Fig_AlexStenderHistorical.png",width = 1000, height = 600)
+(h1 + h2)
+dev.off()
 ```
 
