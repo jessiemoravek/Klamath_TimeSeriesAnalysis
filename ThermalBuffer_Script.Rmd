@@ -196,6 +196,12 @@ CV <- function(x){
 
 ##Individual CVs
 ```{r}
+#Need to use hourly data for this
+#Calulate CV per day and then take all days as a mean
+#for the entire year 
+#take the mean
+#Plot a ts of the CV 
+
 #Alexander Pond 
 CV_AP <- CV(daily_means_summer$AP)
 
@@ -287,25 +293,25 @@ p1 <- ggplot()+
   labs(title = "(a) Alexander Pond", x = "Date", y = "Temperature (C)")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5), axis.title.x=element_blank())
+  theme(text=element_text(size=16),legend.position = "none",axis.title.x=element_blank())
 p2 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = UL), color = "#ed968c", size = 1) +
   labs(title = "(c) Upper Lawrence Pond", x = "Date", y = "Temperature (C)")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+  theme(text=element_text(size=16),legend.position = "none")
 p3 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = SC), color = "#e78429", size = 1) +
   labs(title = "(b) Seiad Creek", x = "Date", y = "Temperature (C)")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5), axis.title.x=element_blank())
+  theme(text=element_text(size=16),legend.position = "none", axis.title.x=element_blank())
 p4 <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = HC), color = "#f9d14a", size = 1) +
   labs(title = "(d) Horse Creek", x = "Date", y = "Temperature (C)")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none", plot.title = element_text(hjust = 0.5))
+  theme(text=element_text(size=16),legend.position = "none")
 
 png("Fig_TempTimeSeries.png",width = 1000, height = 600)
 (p1 + p3) / (p2 + p4)

@@ -220,7 +220,8 @@ mod1_params <- readRDS("mod1_params.RDS")
 mod1_df <- broom::tidy(mod1_params)
 mod1_df_clip <- mod1_df[c(37:48),]
 mod1_df_clip$name <- c("Alexander","Stender","Durazo","LowerSeiad","May","FishGulch","Goodman","UpperLaw","LowerLaw","SeiadCreek","HorseCreek","KlamathRiver")
-mod1_df_ordered <- mod1_df_clip[c(1:5,10,6:9,11:12),]
+
+mod1_df_clip$name <- factor(mod1_df_clip$name, levels = c("Alexander","Stender","Durazo","LowerSeiad","May","SeiadCreek","FishGulch","Goodman","UpperLaw","LowerLaw","HorseCreek","KlamathRiver"))
 
 png("Fig_AirTempEffects.png", width = 500, height = 300)
 ggplot()+
