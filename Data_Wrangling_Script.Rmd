@@ -939,6 +939,13 @@ KSV_daily <- KSV_KO_2020 %>%
 saveRDS(KSV_daily$mean_temp,'KSV_meantemps.rds')
 ```
 
+#Dataframe of hourly water temperatures
+##Run the same code to combine series 
+```{r}
+hourly_temps <- cbind.data.frame(date = AP1$date, AP1 = AP1$Temp, AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp, KSV = KSV$Temp)
+hourly_temps <- as.data.frame(hourly_temps)
+```
+
 
 #Dataframe of mean water temperatures
 ```{r}
@@ -1160,7 +1167,7 @@ daily_mins_condensed <- cbind(AP = daily_mins$AP3, SP = daily_mins$SP, Durazo = 
 daily_mins_condensed <- as.matrix(t(daily_mins_condensed))
 ```
 
-#Final Dataframes
+#Final Daily Dataframes
 ```{r}
 str(daily_means_condensed) #Matrix of mean daily water temperatures for 9 ponds, 2 creeks, and mainstem Klamath from 1 July 2020 to 13 July 2021
 saveRDS(daily_means_condensed, "daily_means_condensed.rds")
