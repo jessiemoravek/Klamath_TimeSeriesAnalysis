@@ -283,7 +283,7 @@ data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seia
                         CV_diff_LL),2))
 
 ```
-#Time Series Examples Figure
+#Figure 3: Time Series Examples Figure
 ```{r}
 daily_means_condensed
 mycolors <- met.brewer(name="Archambault",n=4,type="discrete")
