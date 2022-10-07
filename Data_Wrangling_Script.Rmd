@@ -737,6 +737,7 @@ KSV <- read.csv("SeiadValley_KlamathMain_AllData.csv")
 KSV$date <- lubridate::mdy_hm(KSV$Date_Time)#convert dates to POSIXct format 
 
 #Trim the dataset
+head(KSV)
 KSV <- KSV[c(2585:117486),] #Most missing data is between 2015-Feb 2016, so removing the first ~ year of data
 
 #Check for missing data
@@ -776,7 +777,7 @@ KSV_ts <- ts(KSV_hourly$zTemp, start = c(123, 15), frequency = 24) # This time s
 ##Reading in a 6 year temperature time series (15 or 30 min intervals) dataset from Klamath River at Orleans called KO (Klamath Orleans). Data collected by Karuk Tribe.
 KO <- read.csv("Orleans_KlamathMain_AllData.csv")
 KO$date <- lubridate::mdy_hm(KO$Date_Time)#convert dates to POSIXct format 
-
+tail(KO)
 #Trim the dataset
 KO <- KO[c(4190:135357),] #Removing the first ~ year of data to align with Seiad Valley dataset
 
@@ -940,10 +941,30 @@ saveRDS(KSV_daily$mean_temp,'KSV_meantemps.rds')
 ```
 
 #Dataframe of hourly water temperatures
-##Run the same code to combine series 
 ```{r}
-hourly_temps <- cbind.data.frame(date = AP1$date, AP1 = AP1$Temp, AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp, KSV = KSV$Temp)
+#Position dataset into a full year data frame by hourly steps using KSV (longest time series, will have measurements for every time step)
+hour_temps <- lubridate::floor_date(KSV$date, unit="hour") #Bin by hour
+head(KSV, n=70) #check the dataset start date
+tail(KSV) #check the dataset end date
+hour <- seq(mdy_h('7/1/2020_00'),mdy_h('7/13/2021_00'),by = "hour") #Create an object that goes hour by hour for whole series
+hour <- as.data.frame(hour) #convert "hour" to data frame
+KSV <- left_join(hour, KSV) #join hour and dataset
+hourly_temps <- left_join(KSV)
+
+#Group by hour and calculate mean
+KSV_hourly <- KSV %>%   group_by(hour) %>% summarize(mean_temp=mean(Temp))
+
+
+#Combine hourly temperature measurements
+hourly_temps <- cbind(AP1 = AP1$Temp, AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp, KSV = KSV_KO_2020$mean_temp.y, hour = KSV_KO_2020$hour)
 hourly_temps <- as.data.frame(hourly_temps)
+str(hourly_temps)
+tail(AP1)
+
+
+
+
+
 ```
 
 
