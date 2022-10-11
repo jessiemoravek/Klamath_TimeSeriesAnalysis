@@ -35,8 +35,14 @@ str(AP1) #Now we have 30123 observations
 missing_data <- AP1[!complete.cases(AP1),] 
 missing_data
 
+#Position dataset into a full year data frame by 15 min steps
+AP1$quarterHour <- lubridate::floor_date(AP1$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+AP1 <- left_join(quarterHour,AP1)
+
 #Position dataset into a full year data frame by daily steps
-AP1$day <- lubridate::floor_date(AP1$date, unit="day") #Bin by day
+AP1$day <- lubridate::floor_date(AP1$quarterHour, unit="day") #Bin by day
 head(AP1, n=70) #check the dataset start date
 tail(AP1) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -61,8 +67,14 @@ str(AP2) #Now we have 7970  observations
 missing_data <- AP2[!complete.cases(AP2),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+AP2$quarterHour <- lubridate::floor_date(AP2$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+AP2 <- left_join(quarterHour,AP2)
+
 #Position dataset into a full year data frame by daily steps
-AP2$day <- lubridate::floor_date(AP2$date, unit="day") #Bin by day
+AP2$day <- lubridate::floor_date(AP2$quarterHour, unit="day") #Bin by day
 head(AP2, n=70) #check the dataset start date
 tail(AP2) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -87,8 +99,14 @@ str(AP3) #Now we have 35304  observations
 missing_data <- AP3[!complete.cases(AP3),] 
 missing_data#No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+AP3$quarterHour <- lubridate::floor_date(AP3$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+AP3 <- left_join(quarterHour,AP3)
+
 #Position dataset into a full year data frame by daily steps
-AP3$day <- lubridate::floor_date(AP3$date, unit="day") #Bin by day
+AP3$day <- lubridate::floor_date(AP3$quarterHour, unit="day") #Bin by day
 head(AP3, n=70) #check the dataset start date
 tail(AP3) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -113,8 +131,14 @@ str(APck) #Now we have 18038  observations
 missing_data <- APck[!complete.cases(APck),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+APck$quarterHour <- lubridate::floor_date(APck$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+APck <- left_join(quarterHour,APck)
+
 #Position dataset into a full year data frame by daily steps
-APck$day <- lubridate::floor_date(APck$date, unit="day") #Bin by day
+APck$day <- lubridate::floor_date(APck$quarterHour, unit="day") #Bin by day
 head(APck, n=70) #check the dataset start date
 tail(APck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -142,8 +166,14 @@ str(SP1) #Now we have 35230  observations
 missing_data <- SP1[!complete.cases(SP1),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+SP1$quarterHour <- lubridate::floor_date(SP1$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+SP1 <- left_join(quarterHour,SP1)
+
 #Position dataset into a full year data frame by daily steps
-SP1$day <- lubridate::floor_date(SP1$date, unit="day") #Bin by day
+SP1$day <- lubridate::floor_date(SP1$quarterHour, unit="day") #Bin by day
 head(SP1, n=70) #check the dataset start date
 tail(SP1) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -187,8 +217,14 @@ SP2 <- rbind(SP2a,SP2b)
 missing_data <- SP2[!complete.cases(SP2),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+SP2$quarterHour <- lubridate::floor_date(SP2$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+SP2 <- left_join(quarterHour,SP2)
+
 #Position dataset into a full year data frame by daily steps
-SP2$day <- lubridate::floor_date(SP2$date, unit="day") #Bin by day
+SP2$day <- lubridate::floor_date(SP2$quarterHour, unit="day") #Bin by day
 head(SP2, n=70) #check the dataset start date
 tail(SP2) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -215,8 +251,14 @@ str(SPck) #Now we have 24219  observations
 missing_data <- SPck[!complete.cases(SPck),] #No missing data
 missing_data
 
+#Position dataset into a full year data frame by 15 min steps
+SPck$quarterHour <- lubridate::floor_date(SPck$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+SPck <- left_join(quarterHour,SPck)
+
 #Position dataset into a full year data frame by daily steps
-SPck$day <- lubridate::floor_date(SPck$date, unit="day") #Bin by day
+SPck$day <- lubridate::floor_date(SPck$quarterHour, unit="day") #Bin by day
 head(SPck, n=70) #check the dataset start date
 tail(SPck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -240,8 +282,14 @@ str(Durazo) #Now we have 35010  observations
 missing_data <- Durazo[!complete.cases(Durazo),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+Durazo$quarterHour <- lubridate::floor_date(Durazo$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+Durazo <- left_join(quarterHour,Durazo)
+
 #Position dataset into a full year data frame by daily steps
-Durazo$day <- lubridate::floor_date(Durazo$date, unit="day") #Bin by day
+Durazo$day <- lubridate::floor_date(Durazo$quarterHour, unit="day") #Bin by day
 head(Durazo, n=70) #check the dataset start date
 tail(Durazo) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -266,8 +314,14 @@ str(LS) #Now we have 35018 observations
 missing_data <- LS[!complete.cases(LS),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+LS$quarterHour <- lubridate::floor_date(LS$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+LS <- left_join(quarterHour,LS)
+
 #Position dataset into a full year data frame by daily steps
-LS$day <- lubridate::floor_date(LS$date, unit="day") #Bin by day
+LS$day <- lubridate::floor_date(LS$quarterHour, unit="day") #Bin by day
 head(LS, n=70) #check the dataset start date
 tail(LS) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -292,8 +346,14 @@ str(LSck) #Now we have 35016  observations
 missing_data <- LSck[!complete.cases(LSck),] #No missing data
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+LSck$quarterHour <- lubridate::floor_date(LSck$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+LSck <- left_join(quarterHour,LSck)
+
 #Position dataset into a full year data frame by daily steps
-LSck$day <- lubridate::floor_date(LSck$date, unit="day") #Bin by day
+LSck$day <- lubridate::floor_date(LSck$quarterHour, unit="day") #Bin by day
 head(LSck, n=70) #check the dataset start date
 tail(LSck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -317,8 +377,14 @@ str(May) #Now we have 32621 observations
 missing_data <- May[!complete.cases(May),] #No missing data
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+May$quarterHour <- lubridate::floor_date(May$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+May <- left_join(quarterHour,May)
+
 #Position dataset into a full year data frame by daily steps
-May$day <- lubridate::floor_date(May$date, unit="day") #Bin by day
+May$day <- lubridate::floor_date(May$quarterHour, unit="day") #Bin by day
 head(May, n=70) #check the dataset start date
 tail(May) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -342,8 +408,14 @@ str(MayCk) #Now we have 35025  observations
 missing_data <- MayCk[!complete.cases(MayCk),]
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+MayCk$quarterHour <- lubridate::floor_date(MayCk$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+MayCk <- left_join(quarterHour,MayCk)
+
 #Position dataset into a full year data frame by daily steps
-MayCk$day <- lubridate::floor_date(MayCk$date, unit="day") #Bin by day
+MayCk$day <- lubridate::floor_date(MayCk$quarterHour, unit="day") #Bin by day
 head(MayCk, n=70) #check the dataset start date
 tail(MayCk) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -369,8 +441,14 @@ FG2 <- FG2%>%filter(date<'2020-11-20 00:00:00'| date > '2021-06-01 00:00:00') #r
 missing_data <- FG2[!complete.cases(FG2),]
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+FG2$quarterHour <- lubridate::floor_date(FG2$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+FG2 <- left_join(quarterHour,FG2)
+
 #Position dataset into a full year data frame by daily steps
-FG2$day <- lubridate::floor_date(FG2$date, unit="day") #Bin by day
+FG2$day <- lubridate::floor_date(FG2$quarterHour, unit="day") #Bin by day
 head(FG2, n=70) #check the dataset start date
 tail(FG2) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -394,8 +472,14 @@ str(FG3) #Now we have 35234  observations
 missing_data <- FG3[!complete.cases(FG3),]
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+FG3$quarterHour <- lubridate::floor_date(FG3$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+FG3 <- left_join(quarterHour,FG3)
+
 #Position dataset into a full year data frame by daily steps
-FG3$day <- lubridate::floor_date(FG3$date, unit="day") #Bin by day
+FG3$day <- lubridate::floor_date(FG3$quarterHour, unit="day") #Bin by day
 head(FG3, n=70) #check the dataset start date
 tail(FG3) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -419,8 +503,14 @@ str(FGck) #Now we have 35231 observations
 missing_data <- FGck[!complete.cases(FGck),] 
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+FGck$quarterHour <- lubridate::floor_date(FGck$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+FGck <- left_join(quarterHour,FGck)
+
 #Position dataset into a full year data frame by daily steps
-FGck$day <- lubridate::floor_date(FGck$date, unit="day") #Bin by day
+FGck$day <- lubridate::floor_date(FGck$quarterHour, unit="day") #Bin by day
 head(FGck, n=70) #check the dataset start date
 tail(FGck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -446,8 +536,14 @@ str(GP1) #Now we have 35335  observations
 missing_data <- GP1[!complete.cases(GP1),] #No missing data
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+GP1$quarterHour <- lubridate::floor_date(GP1$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+GP1 <- left_join(quarterHour,GP1)
+
 #Position dataset into a full year data frame by daily steps
-GP1$day <- lubridate::floor_date(GP1$date, unit="day") #Bin by day
+GP1$day <- lubridate::floor_date(GP1$quarterHour, unit="day") #Bin by day
 head(GP1, n=70) #check the dataset start date
 tail(GP1) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -471,8 +567,15 @@ str(GP2) #Now we have 35341  observations
 missing_data <- GP2[!complete.cases(GP2),]
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+GP2$quarterHour <- lubridate::floor_date(GP2$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+GP2 <- left_join(quarterHour,GP2)
+
+
 #Position dataset into a full year data frame by daily steps
-GP2$day <- lubridate::floor_date(GP2$date, unit="day") #Bin by day
+GP2$day <- lubridate::floor_date(GP2$quarterHour, unit="day") #Bin by day
 head(GP2, n=70) #check the dataset start date
 tail(GP2) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -496,8 +599,14 @@ str(GP3) #Now we have 35339  observations
 missing_data <- GP3[!complete.cases(GP3),]
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+GP3$quarterHour <- lubridate::floor_date(GP3$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+GP3 <- left_join(quarterHour,GP3)
+
 #Position dataset into a full year data frame by daily steps
-GP3$day <- lubridate::floor_date(GP3$date, unit="day") #Bin by day
+GP3$day <- lubridate::floor_date(GP3$quarterHour, unit="day") #Bin by day
 head(GP3, n=70) #check the dataset start date
 tail(GP3) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -521,8 +630,14 @@ str(GPck) #Now we have 34663  observations
 missing_data <- GPck[!complete.cases(GPck),]#No missing data
 missing_data
 
+#Position dataset into a full year data frame by 15 min steps
+GPck$quarterHour <- lubridate::floor_date(GPck$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+GPck <- left_join(quarterHour,GPck)
+
 #Position dataset into a full year data frame by daily steps
-GPck$day <- lubridate::floor_date(GPck$date, unit="day") #Bin by day
+GPck$day <- lubridate::floor_date(GPck$quarterHour, unit="day") #Bin by day
 head(GPck, n=70) #check the dataset start date
 tail(GPck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -547,8 +662,15 @@ str(ULout) #Now we have 1922 observations
 missing_data <- ULout[!complete.cases(ULout),]
 missing_data #No missing data
 
+#Position dataset into a full year data frame by 15 min steps
+ULout$quarterHour <- lubridate::floor_date(ULout$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+ULout <- left_join(quarterHour,ULout)
+
+
 #Position dataset into a full year data frame by daily steps
-ULout$day <- lubridate::floor_date(ULout$date, unit="day") #Bin by day
+ULout$day <- lubridate::floor_date(ULout$quarterHour, unit="day") #Bin by day
 head(ULout, n=70) #check the dataset start date
 tail(ULout) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -571,8 +693,14 @@ str(UL1) #Now we have 35526  observations
 missing_data <- UL1[!complete.cases(UL1),] #No missing data
 missing_data
 
+#Position dataset into a full year data frame by 15 min steps
+UL1$quarterHour <- lubridate::floor_date(UL1$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+UL1 <- left_join(quarterHour,UL1)
+
 #Position dataset into a full year data frame by daily steps
-UL1$day <- lubridate::floor_date(UL1$date, unit="day") #Bin by day
+UL1$day <- lubridate::floor_date(UL1$quarterHour, unit="day") #Bin by day
 head(UL1, n=70) #check the dataset start date
 tail(UL1) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -595,8 +723,14 @@ str(UL3) #Now we have 35491 observations
 missing_data <- UL3[!complete.cases(UL3),] #No missing data
 missing_data
 
+#Position dataset into a full year data frame by 15 min steps
+UL3$quarterHour <- lubridate::floor_date(UL3$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+UL3 <- left_join(quarterHour,UL3)
+
 #Position dataset into a full year data frame by daily steps
-UL3$day <- lubridate::floor_date(UL3$date, unit="day") #Bin by day
+UL3$day <- lubridate::floor_date(UL3$quarterHour, unit="day") #Bin by day
 head(UL3, n=70) #check the dataset start date
 tail(UL3) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -619,8 +753,14 @@ str(ULck) #Now we have 35496  observations
 missing_data <- ULck[!complete.cases(ULck),]
 missing_data #No missing data
 
+#Position dataset into a full year data ULck by 15 min steps
+ULck$quarterHour <- lubridate::floor_date(UL3$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+ULck <- left_join(quarterHour,ULck)
+
 #Position dataset into a full year data frame by daily steps
-ULck$day <- lubridate::floor_date(ULck$date, unit="day") #Bin by day
+ULck$day <- lubridate::floor_date(ULck$quarterHour, unit="day") #Bin by day
 head(ULck, n=70) #check the dataset start date
 tail(ULck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -645,8 +785,14 @@ str(LL1) #Now we have 1728 observations
 missing_data <- LL1[!complete.cases(LL1),]
 missing_data #No missing data
 
+#Position dataset into a full year data ULck by 15 min steps
+LL1$quarterHour <- lubridate::floor_date(LL1$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+LL1 <- left_join(quarterHour,LL1)
+
 #Position dataset into a full year data frame by daily steps
-LL1$day <- lubridate::floor_date(LL1$date, unit="day") #Bin by day
+LL1$day <- lubridate::floor_date(LL1$quarterHour, unit="day") #Bin by day
 head(LL1, n=70) #check the dataset start date
 tail(LL1) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -670,8 +816,14 @@ str(LL2)
 missing_data <- LL2[!complete.cases(LL2),]
 missing_data #No missing data
 
+#Position dataset into a full year data ULck by 15 min steps
+LL2$quarterHour <- lubridate::floor_date(LL2$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+LL2 <- left_join(quarterHour,LL2)
+
 #Position dataset into a full year data frame by daily steps
-LL2$day <- lubridate::floor_date(LL2$date, unit="day") #Bin by day
+LL2$day <- lubridate::floor_date(LL2$quarterHour, unit="day") #Bin by day
 head(LL2, n=70) #check the dataset start date
 tail(LL2) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -694,8 +846,14 @@ str(LL3)
 missing_data <- LL3[!complete.cases(LL3),]
 missing_data #No missing data
 
+#Position dataset into a full year data ULck by 15 min steps
+LL3$quarterHour <- lubridate::floor_date(LL3$date, unit="15 mins") 
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+LL3 <- left_join(quarterHour,LL3)
+
 #Position dataset into a full year data frame by daily steps
-LL3$day <- lubridate::floor_date(LL3$date, unit="day") #Bin by day
+LL3$day <- lubridate::floor_date(LL3$quarterHour, unit="day") #Bin by day
 head(LL3, n=70) #check the dataset start date
 tail(LL3) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
@@ -932,6 +1090,7 @@ day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that g
 day <- as.data.frame(day) #convert "day" to data frame
 KSV_KO_2020 <- left_join(day, KSV_KO_2020) #join day and dataset
 
+
 #Group by day and calculate mean, max, min, amp
 KSV_daily <- KSV_KO_2020 %>% 
   group_by(day) %>% 
@@ -942,21 +1101,8 @@ saveRDS(KSV_daily$mean_temp,'KSV_meantemps.rds')
 
 #Dataframe of hourly water temperatures
 ```{r}
-#Position dataset into a full year data frame by hourly steps using KSV (longest time series, will have measurements for every time step)
-hour_temps <- lubridate::floor_date(KSV$date, unit="hour") #Bin by hour
-head(KSV, n=70) #check the dataset start date
-tail(KSV) #check the dataset end date
-hour <- seq(mdy_h('7/1/2020_00'),mdy_h('7/13/2021_00'),by = "hour") #Create an object that goes hour by hour for whole series
-hour <- as.data.frame(hour) #convert "hour" to data frame
-KSV <- left_join(hour, KSV) #join hour and dataset
-hourly_temps <- left_join(KSV)
-
-#Group by hour and calculate mean
-KSV_hourly <- KSV %>%   group_by(hour) %>% summarize(mean_temp=mean(Temp))
-
-
 #Combine hourly temperature measurements
-hourly_temps <- cbind(AP1 = AP1$Temp, AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp, KSV = KSV_KO_2020$mean_temp.y, hour = KSV_KO_2020$hour)
+hourly_temps <- cbind(AP1 = AP1$Temp, AP2 = AP2$Temp,AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp, KSV = KSV_KO_2020$mean_temp.y, hour = KSV_KO_2020$hour)
 hourly_temps <- as.data.frame(hourly_temps)
 str(hourly_temps)
 tail(AP1)
