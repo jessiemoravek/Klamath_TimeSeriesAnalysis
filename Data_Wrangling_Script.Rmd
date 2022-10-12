@@ -754,7 +754,7 @@ missing_data <- ULck[!complete.cases(ULck),]
 missing_data #No missing data
 
 #Position dataset into a full year data ULck by 15 min steps
-ULck$quarterHour <- lubridate::floor_date(UL3$date, unit="15 mins") 
+ULck$quarterHour <- lubridate::floor_date(ULck$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 ULck <- left_join(quarterHour,ULck)
@@ -787,10 +787,10 @@ missing_data #No missing data
 
 #Position dataset into a full year data ULck by 15 min steps
 LL1$quarterHour <- lubridate::floor_date(LL1$date, unit="15 mins") 
-quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/14/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 LL1 <- left_join(quarterHour,LL1)
-
+tail(LL1)
 #Position dataset into a full year data frame by daily steps
 LL1$day <- lubridate::floor_date(LL1$quarterHour, unit="day") #Bin by day
 head(LL1, n=70) #check the dataset start date
@@ -1101,16 +1101,10 @@ saveRDS(KSV_daily$mean_temp,'KSV_meantemps.rds')
 
 #Dataframe of hourly water temperatures
 ```{r}
-#Combine hourly temperature measurements
-hourly_temps <- cbind(AP1 = AP1$Temp, AP2 = AP2$Temp,AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp, KSV = KSV_KO_2020$mean_temp.y, hour = KSV_KO_2020$hour)
-hourly_temps <- as.data.frame(hourly_temps)
-str(hourly_temps)
-tail(AP1)
-
-
-
-
-
+#Combine 15min temperature measurements
+quarterHour_temps <- cbind(AP1 = AP1$Temp, AP2 = AP2$Temp,AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp)
+quarterHour_temps <- as.data.frame(quarterHour_temps)
+saveRDS(quarterHour_temps,"quarterHour_temps.RDS")
 ```
 
 
@@ -1163,6 +1157,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("SP1","SP2"))
 #both ok, need to take average
+quarterHour_temps$SP <-rowMeans(quarterHour_temps[,c('SP1', 'SP2')], na.rm=TRUE)
 daily_means$SP <- rowMeans(daily_means[,c('SP1', 'SP2')], na.rm=TRUE)
 daily_maxs$SP <- rowMeans(daily_maxs[,c('SP1', 'SP2')], na.rm=TRUE)
 daily_mins$SP <- rowMeans(daily_mins[,c('SP1', 'SP2')], na.rm=TRUE)
@@ -1201,6 +1196,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("GP1","GP2","GP3"))
 #need to remove GP1
+quarterHour_temps$GP<- rowMeans(quarterHour_temps[,c('GP2', 'GP3')], na.rm=TRUE)
 daily_means$GP <- rowMeans(daily_means[,c('GP2', 'GP3')], na.rm=TRUE)
 daily_maxs$GP <- rowMeans(daily_maxs[,c('GP2', 'GP3')], na.rm=TRUE)
 daily_mins$GP <- rowMeans(daily_mins[,c('GP2', 'GP3')], na.rm=TRUE)
@@ -1227,6 +1223,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("ULout","UL1","UL3"))
 #need to remove UL1
+quarterHour_temps$UL<- rowMeans(quarterHour_temps[,c('ULout', 'UL3')], na.rm=TRUE)
 daily_means$UL <- rowMeans(daily_means[,c('ULout', 'UL3')], na.rm=TRUE)
 daily_maxs$UL <- rowMeans(daily_maxs[,c('ULout', 'UL3')], na.rm=TRUE)
 daily_mins$UL <- rowMeans(daily_mins[,c('ULout', 'UL3')], na.rm=TRUE)
@@ -1253,6 +1250,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("LL1","LL2","LL3"))
 #all ok
+quarterHour_temps$LL<- rowMeans(quarterHour_temps[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
 daily_means$LL <- rowMeans(daily_means[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
 daily_maxs$LL <- rowMeans(daily_maxs[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
 daily_mins$LL <- rowMeans(daily_mins[,c('LL1','LL2', 'LL3')], na.rm=TRUE)
@@ -1280,6 +1278,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("APck","SPck","LSck","MayCk"))
 #need to remove APck and SPck
+quarterHour_temps$SC<- rowMeans(quarterHour_temps[,c('LSck','MayCk')], na.rm=TRUE)
 daily_means$SC <-  rowMeans(daily_means[,c('LSck','MayCk')], na.rm=TRUE)
 daily_maxs$SC <- rowMeans(daily_maxs[,c('LSck','MayCk')], na.rm=TRUE)
 daily_mins$SC <- rowMeans(daily_mins[,c('LSck','MayCk')], na.rm=TRUE)
@@ -1305,6 +1304,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("FGck","GPck","ULck"))
 #need to remove GPck
+quarterHour_temps$HC<- rowMeans(quarterHour_temps[,c('ULck','FGck')], na.rm=TRUE)
 daily_means$HC <- rowMeans(daily_means[,c('ULck','FGck')], na.rm=TRUE)
 daily_maxs$HC <- rowMeans(daily_maxs[,c('ULck','FGck')], na.rm=TRUE)
 daily_mins$HC <- rowMeans(daily_mins[,c('ULck','FGck')], na.rm=TRUE)
@@ -1318,24 +1318,31 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("FGck","ULck", "HC"))
 ```
-#Matrix of transformed data with 12 sites (daily_means_condensed)
+#Matrix of transformed data with 12 sites (quarterHour_temps, daily_means_condensed)
 ```{r}
-#Mean
+#Hourly
+quarterHour_condensed <- cbind(AP = quarterHour_temps$AP3, SP = quarterHour_temps$SP, Durazo = quarterHour_temps$Durazo, LS = quarterHour_temps$LS, May = quarterHour_temps$May, FG = quarterHour_temps$FG3, GP = quarterHour_temps$GP, UL = quarterHour_temps$UL, LL = quarterHour_temps$LL, SC = quarterHour_temps$SC, HC = quarterHour_temps$HC, KSV = quarterHour_temps$KSV)
+quarterHour_condensed <- as.matrix(t(quarterHour_condensed))
+
+#Daily Mean
 daily_means_condensed <- cbind(AP = daily_means$AP3, SP = daily_means$SP, Durazo = daily_means$Durazo, LS = daily_means$LS, May = daily_means$May, FG = daily_means$FG3, GP = daily_means$GP, UL = daily_means$UL, LL = daily_means$LL, SC = daily_means$SC, HC = daily_means$HC, KSV = daily_means$KSV)
 daily_means_condensed <- as.matrix(t(daily_means_condensed))
 
-
-#Max
+#Daily Max
 daily_maxs_condensed <- cbind(AP = daily_maxs$AP3, SP = daily_maxs$SP, Durazo = daily_maxs$Durazo, LS = daily_maxs$LS, May = daily_maxs$May, FG = daily_maxs$FG3, GP = daily_maxs$GP, UL = daily_maxs$UL, LL = daily_maxs$LL, SC = daily_maxs$SC, HC = daily_maxs$HC, KSV = daily_maxs$KSV)
 daily_maxs_condensed <- as.matrix(t(daily_maxs_condensed))
 
-#Min
+#Daily Min
 daily_mins_condensed <- cbind(AP = daily_mins$AP3, SP = daily_mins$SP, Durazo = daily_mins$Durazo, LS = daily_mins$LS, May = daily_mins$May, FG = daily_mins$FG3, GP = daily_mins$GP, UL = daily_mins$UL, LL = daily_mins$LL, SC = daily_mins$SC, HC = daily_mins$HC, KSV = daily_mins$KSV)
 daily_mins_condensed <- as.matrix(t(daily_mins_condensed))
 ```
 
-#Final Daily Dataframes
+#Final Dataframes
 ```{r}
+
+str(quarterHour_condensed)
+saveRDS(quarterHour_condensed, "quarterHour_condensed.rds") #Matrix of 15 min temps
+
 str(daily_means_condensed) #Matrix of mean daily water temperatures for 9 ponds, 2 creeks, and mainstem Klamath from 1 July 2020 to 13 July 2021
 saveRDS(daily_means_condensed, "daily_means_condensed.rds")
 

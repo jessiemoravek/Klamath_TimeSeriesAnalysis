@@ -23,6 +23,22 @@ library(forecast)
 library(zoo)
 library(imputeTS) 
 ```
+#Hourly Data
+###Data Wrangling
+```{r}
+#Read in data
+quarterHour_condensed <- readRDS('quarterHour_condensed.RDS')
+quarterHour_condensed <- as.data.frame(t(quarterHour_condensed))
+quarterHour_condensed <- quarterHour_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
+tail(quarterHour_condensed)
+#Create 15 min sequence
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
+quarterHour <- as.data.frame(quarterHour)
+
+#Attach to data frame
+quarterHour_condensed <- cbind(quarterHour_condensed,quarterHour)
+```
+
 #Seasonal buffering
 ##Summer 
 ###Data wrangling
