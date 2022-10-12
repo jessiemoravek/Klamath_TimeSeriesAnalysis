@@ -3,6 +3,8 @@ title: "2021_Temp_Visualization"
 output:
   pdf_document: default
   html_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -40,6 +42,7 @@ AP1$quarterHour <- lubridate::floor_date(AP1$date, unit="15 mins")
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 AP1 <- left_join(quarterHour,AP1)
+View(AP1)
 
 #Position dataset into a full year data frame by daily steps
 AP1$day <- lubridate::floor_date(AP1$quarterHour, unit="day") #Bin by day
@@ -52,7 +55,8 @@ AP1 <- left_join(day, AP1) #join day and dataset
 #Group by day and calculate mean, max, min, amp
 AP1_daily <- AP1 %>% 
   group_by(day) %>% 
-  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+  summarize(mean_temp=mean(Temp, na.rm = T),max_temp=max(Temp, na.rm = T), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
+#Should we drop that day of data?? 
 
 ```
 
@@ -90,7 +94,11 @@ AP2_daily <- AP2 %>%
 
 ```{r, include = FALSE}
 AP3 <- read.csv("Alexander_SN_20878664.csv")
+summary(AP3)
 AP3$date <- lubridate::mdy_hm(AP3$Date_Time)
+AP3 <- AP3 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))
 plot(AP3$date, AP3$Temp)
 head(AP3, n = 50) #Need to remove first 5 values (not in the water yet)
 tail(AP3, n = 50) 
@@ -98,12 +106,28 @@ AP3 <- AP3[c(6:35309),]
 str(AP3) #Now we have 35304  observations
 missing_data <- AP3[!complete.cases(AP3),] 
 missing_data#No missing data
+summary(AP3)
 
 #Position dataset into a full year data frame by 15 min steps
 AP3$quarterHour <- lubridate::floor_date(AP3$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 AP3 <- left_join(quarterHour,AP3)
+dim(AP3)
+
+AP3_quarterHour <- as.data.frame(AP3$quarterHour)
+
+library(janitor)
+janitor::get_dupes(AP3_quarterHour)
+
+AP3 %>% filter(quarterHour == '2020-11-01 01:00:00')
+View(AP3)
+
+summarize(temp = mean(temp))
+n_dupes = n()
+summarize(temp = mean(temp), n_dupes = n())
+
+
 
 #Position dataset into a full year data frame by daily steps
 AP3$day <- lubridate::floor_date(AP3$quarterHour, unit="day") #Bin by day
@@ -787,7 +811,7 @@ missing_data #No missing data
 
 #Position dataset into a full year data ULck by 15 min steps
 LL1$quarterHour <- lubridate::floor_date(LL1$date, unit="15 mins") 
-quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/14/2021 00:00'),by = "15 mins")
+quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 LL1 <- left_join(quarterHour,LL1)
 tail(LL1)
