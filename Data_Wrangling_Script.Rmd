@@ -956,15 +956,14 @@ KSV_hourly$zTemp <- zscore(KSV_hourly$mean_temp)
 
 #Convert to time series
 KSV_ts <- ts(KSV_hourly$zTemp, start = c(123, 0), frequency = 24) # This time series starts on 2 May 2016 at 12 am, so it starts on day 123 (leap year) at hour 0 and the frequency is 24 (24 hours per day)
+plot(KSV_ts)
 ```
 ##Read in Data: Orleans
 ```{r echo = T, results = "hide", messages = F}
 ##Reading in a 6 year temperature time series (15 or 30 min intervals) dataset from Klamath River at Orleans called KO (Klamath Orleans). Data collected by Karuk Tribe.
 KO <- read.csv("Orleans_KlamathMain_QAQCdata.csv")
-KO$date <- lubridate::mdy_hm(KO$Date_Time)#convert dates to POSIXct format 
+KO$date <- lubridate::mdy_hm(KO$TimeStamp)#convert dates to POSIXct format 
 tail(KO)
-#Trim the dataset
-KO <- KO[c(4190:135357),] #Removing the first ~ year of data to align with Seiad Valley dataset
 
 #Check for missing data
 missing_data <- KO[!complete.cases(KO),] 
@@ -974,13 +973,13 @@ missing_data
 KO$hour <- lubridate::floor_date(KO$date, unit="hour") #Bin by hour
 KO_hourly <- KO %>% #Summarize recordings to the hourly level (we have a mix of 30 min and 15 min readings)
   group_by(hour) %>% 
-  summarize(mean_temp=mean(Temp))
+  summarize(mean_temp=mean(Temperature))
 
 head(KO_hourly) #check the dataset start date, use for "hour" sequence
 tail(KO_hourly) #check the dataset end date, use for "hour" sequence
 
 #Create hourly sequence to ensure all missing data is accounted for
-hour <- seq(mdy_h('5/2/2016 15'),mdy_h('2/1/2022 13'),by = "hour") #Create an object that goes hour by hour for the entire time series
+hour <- seq(mdy_h('5/2/2016 00'),mdy_h('2/1/2022 23'),by = "hour") #Create an object that goes hour by hour for the entire time series
 hour <- as.data.frame(hour) #convert "hour" to data frame
 KO_hourly <- left_join(hour, KO_hourly) #left join hour and dataset
 
@@ -995,7 +994,7 @@ missing_data #Now we are sure that all the missing hour time steps are included.
 KO_hourly$zTemp <- zscore(KO_hourly$mean_temp)
 
 #Convert to time series
-KO_ts <- ts(KO_hourly$zTemp, start = c(123, 15), frequency = 24) # This time series starts on 2 May 2016 at 2 am, so it starts on day 123 (leap year) at hour 15 and the frequency is 24 (24 hours per day)
+KO_ts <- ts(KO_hourly$zTemp, start = c(123, 0), frequency = 24) # This time series starts on 2 May 2016 at 2 am, so it starts on day 123 (leap year) at hour 15 and the frequency is 24 (24 hours per day)
 ```
 
 
@@ -1007,8 +1006,8 @@ cor(KSV_hourly$mean_temp, KO_hourly$mean_temp, use = "na.or.complete", method = 
 
 #plot 
 ggplot()+
-  geom_line(data = KSV_hourly, aes(x = hour, y = mean_temp, color = "SeiadValley"))+
   geom_line(data = KO_hourly, aes(x = hour, y = mean_temp, color = "Orleans"))+
+  geom_line(data = KSV_hourly, aes(x = hour, y = mean_temp, color = "SeiadValley"))+
   labs(x = "Year",
        y = "Temperature (C)")+
   theme_classic()+
@@ -1055,8 +1054,8 @@ fit_lm #equation y = mx+b is... KSV = 1.0617(KO) - 0.7997
 ##Predict missing KSV values
 ```{r echo = T}
 #Eliminate data prior to June 1 2020 and after 1 October 2021 (outside study range)
-KSV_hourly_2020 <- KSV_hourly[c(35770:47457),]
-KO_hourly_2020 <- KO_hourly[c(35770:47457),]
+KSV_hourly_2020 <- KSV_hourly[c(35785:47472),]
+KO_hourly_2020 <- KO_hourly[c(35785:47472),]
 KO_hourly_2020_ts <- ts(KO_hourly_2020$mean_temp, start = c(152, 0), frequency = 24) #need it in ts format for predict function
 
 #Need to name the "newdata" variable that we are plugging into the predict function the SAME NAME as the variable we used in the fit_lm linear equation above. 
@@ -1107,8 +1106,13 @@ ggplot()+
   scale_y_continuous("Temperature (C)", limits = c(0,30), breaks = 5*0:30)
 
 ```
-##Bin KSV data by day and cut to timeframe of interest
+##Bin KSV data by hour and day day and cut to timeframe of interest
 ```{r}
+#Cut dataset to correct hourly timesteps 
+hour <- seq(mdy_h('7/1/2020 00'),mdy_h('7/13/2021 00'),by = "hour")
+hour <- as.data.frame(hour)
+KSV_KO_2020 <- left_join(hour,KSV_KO_2020)
+
 #Position dataset into a full year data frame by daily steps
 KSV_KO_2020$day <- lubridate::floor_date(KSV_KO_2020$hour, unit="day") #Bin by day
 head(KSV_KO_2020, n=70) #check the dataset start date
@@ -1126,14 +1130,13 @@ KSV_daily <- KSV_KO_2020 %>%
 saveRDS(KSV_daily$mean_temp,'KSV_meantemps.rds')
 ```
 
-#Dataframe of hourly water temperatures
+#Dataframe of 15 min water temperatures
 ```{r}
 #Combine 15min temperature measurements
 quarterHour_temps <- cbind(AP1 = AP1$Temp, AP2 = AP2$Temp,AP3 = AP3$Temp, APck = APck$Temp, SP1 = SP1$Temp, SP2 = SP2$Temp, SPck = SPck$Temp, Durazo = Durazo$Temp, LS = LS$Temp, LSck = LSck$Temp, May = May$Temp, MayCk = MayCk$Temp, FG2 = FG2$Temp, FG3 = FG3$Temp, FGck = FGck$Temp, GP1 = GP1$Temp, GP2 = GP2$Temp, GP3 = GP3$Temp, GPck = GPck$Temp, ULout = ULout$Temp, UL1 = UL1$Temp, UL3 = UL3$Temp, ULck = ULck$Temp, LL1 = LL1$Temp, LL2 = LL2$Temp, LL3 = LL3$Temp)
 quarterHour_temps <- as.data.frame(quarterHour_temps)
 saveRDS(quarterHour_temps,"quarterHour_temps.RDS")
 ```
-
 
 #Dataframe of mean water temperatures
 ```{r}
