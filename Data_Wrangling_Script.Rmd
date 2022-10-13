@@ -4,7 +4,7 @@ output:
   pdf_document: default
   html_document: default
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -34,54 +34,53 @@ head(AP1, n = 50) #Need to remove first 4 values (not in the water yet)
 tail(AP1, n = 100) #Need to remove last 8 values. Sensor repeated a measurement at 11:00, removed at 10:45 to be safe. 
 AP1 <- AP1[c(4:30126),] 
 str(AP1) #Now we have 30123 observations
+AP1 <- AP1 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- AP1[!complete.cases(AP1),] 
 missing_data
 
-#Position dataset into a full year data frame by 15 min steps
+#Position dataset into a full year data frame, bin by 15 min steps
 AP1$quarterHour <- lubridate::floor_date(AP1$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
-quarterHour <- as.data.frame(quarterHour)
-AP1 <- left_join(quarterHour,AP1)
-View(AP1)
+quarterHour <- as.data.frame(quarterHour) #convert "quarterHour" to data frame
+AP1 <- left_join(quarterHour,AP1) #join quarterHour and dataset
 
-#Position dataset into a full year data frame by daily steps
+#Position dataset into a full year data frame, bin by daily steps
 AP1$day <- lubridate::floor_date(AP1$quarterHour, unit="day") #Bin by day
-head(AP1, n=70) #check the dataset start date
-tail(AP1) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 AP1 <- left_join(day, AP1) #join day and dataset
 
 #Group by day and calculate mean, max, min, amp
 AP1_daily <- AP1 %>% 
   group_by(day) %>% 
-  summarize(mean_temp=mean(Temp, na.rm = T),max_temp=max(Temp, na.rm = T), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
-#Should we drop that day of data?? 
+  summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
 
 ```
 
 ```{r, include = FALSE}
 AP2 <- read.csv("Alexander_SN_20878648.csv")
 AP2$date <- lubridate::mdy_hm(AP2$Date_Time)
-plot(AP2$date, AP2$Temp)
 head(AP2, n = 50) #Need to remove first 6 values (not in the water yet)
 tail(AP2, n = 50) 
 AP2 <- AP2[c(7:7976),] 
 str(AP2) #Now we have 7970  observations
+AP2 <- AP2 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- AP2[!complete.cases(AP2),] 
 missing_data #No missing data
 
 #Position dataset into a full year data frame by 15 min steps
 AP2$quarterHour <- lubridate::floor_date(AP2$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
-quarterHour <- as.data.frame(quarterHour)
-AP2 <- left_join(quarterHour,AP2)
+quarterHour <- as.data.frame(quarterHour) #convert "quarterHour" to data frame
+AP2 <- left_join(quarterHour,AP2) #join quarterHour and dataset
 
 #Position dataset into a full year data frame by daily steps
 AP2$day <- lubridate::floor_date(AP2$quarterHour, unit="day") #Bin by day
-head(AP2, n=70) #check the dataset start date
-tail(AP2) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 AP2 <- left_join(day, AP2) #join day and dataset
 
@@ -94,46 +93,26 @@ AP2_daily <- AP2 %>%
 
 ```{r, include = FALSE}
 AP3 <- read.csv("Alexander_SN_20878664.csv")
-summary(AP3)
 AP3$date <- lubridate::mdy_hm(AP3$Date_Time)
-AP3 <- AP3 %>% 
-  group_by(date) %>% 
-  summarize(Temp = mean(Temp))
-plot(AP3$date, AP3$Temp)
 head(AP3, n = 50) #Need to remove first 5 values (not in the water yet)
 tail(AP3, n = 50) 
 AP3 <- AP3[c(6:35309),] 
 str(AP3) #Now we have 35304  observations
+AP3 <- AP3 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- AP3[!complete.cases(AP3),] 
 missing_data#No missing data
-summary(AP3)
 
 #Position dataset into a full year data frame by 15 min steps
 AP3$quarterHour <- lubridate::floor_date(AP3$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
-quarterHour <- as.data.frame(quarterHour)
-AP3 <- left_join(quarterHour,AP3)
-dim(AP3)
-
-AP3_quarterHour <- as.data.frame(AP3$quarterHour)
-
-library(janitor)
-janitor::get_dupes(AP3_quarterHour)
-
-AP3 %>% filter(quarterHour == '2020-11-01 01:00:00')
-View(AP3)
-
-summarize(temp = mean(temp))
-n_dupes = n()
-summarize(temp = mean(temp), n_dupes = n())
-
-
+quarterHour <- as.data.frame(quarterHour) #convert "quarterHour" to data frame
+AP3 <- left_join(quarterHour,AP3) #join quarterHour and dataset
 
 #Position dataset into a full year data frame by daily steps
 AP3$day <- lubridate::floor_date(AP3$quarterHour, unit="day") #Bin by day
-head(AP3, n=70) #check the dataset start date
-tail(AP3) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 AP3 <- left_join(day, AP3) #join day and dataset
 
@@ -147,24 +126,24 @@ AP3_daily <- AP3 %>%
 ```{r, include = FALSE}
 APck <- read.csv("AlexanderCk_SN_20878703.csv")
 APck$date <- lubridate::mdy_hm(APck$Date_Time)
-plot(APck$date, APck$Temp)
 head(APck, n = 100) #Need to remove first 87 values (not in the water yet)
 tail(APck, n = 500) 
 APck <- APck[c(88:18125),] #Need to cut off everything after 17 January 2021 because sensor out of water
 str(APck) #Now we have 18038  observations
+APck <- APck %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- APck[!complete.cases(APck),] 
 missing_data #No missing data
 
 #Position dataset into a full year data frame by 15 min steps
 APck$quarterHour <- lubridate::floor_date(APck$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
-quarterHour <- as.data.frame(quarterHour)
-APck <- left_join(quarterHour,APck)
+quarterHour <- as.data.frame(quarterHour)#convert "quarterHour" to data frame
+APck <- left_join(quarterHour,APck)#join quarterHour and dataset
 
 #Position dataset into a full year data frame by daily steps
 APck$day <- lubridate::floor_date(APck$quarterHour, unit="day") #Bin by day
-head(APck, n=70) #check the dataset start date
-tail(APck) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
 day <- as.data.frame(day) #convert "day" to data frame
 APck <- left_join(day, APck) #join day and dataset
@@ -173,7 +152,6 @@ APck <- left_join(day, APck) #join day and dataset
 APck_daily <- APck %>% 
   group_by(day) %>% 
   summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
-plot(APck_daily$day,APck_daily$amp_temp)
 
 ```
 
@@ -182,11 +160,13 @@ plot(APck_daily$day,APck_daily$amp_temp)
 ```{r, include = FALSE}
 SP1 <- read.csv("Stender_SN_20870127.csv")
 SP1$date <- lubridate::mdy_hm(SP1$Date_Time)
-plot(SP1$date, SP1$Temp)
 head(SP1, n = 100) #Need to remove first 11 values (not in the water yet) 
 tail(SP1) 
 SP1 <- SP1[c(12:35241),] 
 str(SP1) #Now we have 35230  observations
+SP1 <- SP1 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- SP1[!complete.cases(SP1),] 
 missing_data #No missing data
 
@@ -198,9 +178,7 @@ SP1 <- left_join(quarterHour,SP1)
 
 #Position dataset into a full year data frame by daily steps
 SP1$day <- lubridate::floor_date(SP1$quarterHour, unit="day") #Bin by day
-head(SP1, n=70) #check the dataset start date
-tail(SP1) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 SP1 <- left_join(day, SP1) #join day and dataset
 
@@ -208,7 +186,6 @@ SP1 <- left_join(day, SP1) #join day and dataset
 SP1_daily <- SP1 %>% 
   group_by(day) %>% 
   summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
-summary(SP1_daily$amp_temp,na.rm=T)
 ```
 
 ```{r, include = FALSE}
@@ -238,6 +215,9 @@ missing_data #No missing data
 #SP2 is 11 July 2020 - 13 July 2021
 
 SP2 <- rbind(SP2a,SP2b)
+SP2 <- SP2 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- SP2[!complete.cases(SP2),] 
 missing_data #No missing data
 
@@ -249,8 +229,6 @@ SP2 <- left_join(quarterHour,SP2)
 
 #Position dataset into a full year data frame by daily steps
 SP2$day <- lubridate::floor_date(SP2$quarterHour, unit="day") #Bin by day
-head(SP2, n=70) #check the dataset start date
-tail(SP2) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
 day <- as.data.frame(day) #convert "day" to data frame
 SP2 <- left_join(day, SP2) #join day and dataset
@@ -266,12 +244,14 @@ SP2_daily <- SP2 %>%
 ```{r, include = FALSE}
 SPck <- read.csv("StenderCk_SN_20870136.csv")
 SPck$date <- lubridate::mdy_hm(SPck$Date_Time)
-plot(SPck$date, SPck$Temp)
 head(SPck, n = 100) #Need to remove first 5 values. Also remove 1140:1141 on 28 July 2020 when sensor was reset 
 tail(SPck, n = 800) #Sensor started to fail on 15 April 2021, removed last day of readings. 
 SPck <- SPck[c(6:1139,1142:26240),] 
 SPck <- SPck%>%filter(date<'2020-11-15 00:00:00'| date > '2020-12-16 00:00:00') #removed 15 Nov through 16 Dec when sensor was out of water
 str(SPck) #Now we have 24219  observations
+SPck <- SPck %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- SPck[!complete.cases(SPck),] #No missing data
 missing_data
 
@@ -283,9 +263,7 @@ SPck <- left_join(quarterHour,SPck)
 
 #Position dataset into a full year data frame by daily steps
 SPck$day <- lubridate::floor_date(SPck$quarterHour, unit="day") #Bin by day
-head(SPck, n=70) #check the dataset start date
-tail(SPck) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 SPck <- left_join(day, SPck) #join day and dataset
 
@@ -303,6 +281,9 @@ head(Durazo, n = 100) #Need to remove first 9 values
 tail(Durazo) 
 Durazo <- Durazo[c(10:35019),] 
 str(Durazo) #Now we have 35010  observations
+Durazo <- Durazo %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- Durazo[!complete.cases(Durazo),] 
 missing_data #No missing data
 
@@ -314,8 +295,6 @@ Durazo <- left_join(quarterHour,Durazo)
 
 #Position dataset into a full year data frame by daily steps
 Durazo$day <- lubridate::floor_date(Durazo$quarterHour, unit="day") #Bin by day
-head(Durazo, n=70) #check the dataset start date
-tail(Durazo) #check the dataset end date
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
 day <- as.data.frame(day) #convert "day" to data frame
 Durazo <- left_join(day, Durazo) #join day and dataset
@@ -335,6 +314,9 @@ head(LS, n = 100) #Need to remove first 3 values
 tail(LS) 
 LS <- LS[c(4:35021),] 
 str(LS) #Now we have 35018 observations
+LS <- LS %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- LS[!complete.cases(LS),] 
 missing_data #No missing data
 
@@ -346,9 +328,7 @@ LS <- left_join(quarterHour,LS)
 
 #Position dataset into a full year data frame by daily steps
 LS$day <- lubridate::floor_date(LS$quarterHour, unit="day") #Bin by day
-head(LS, n=70) #check the dataset start date
-tail(LS) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 LS <- left_join(day, LS) #join day and dataset
 
@@ -361,12 +341,14 @@ LS_daily <- LS %>%
 ```{r, include = FALSE}
 LSck <- read.csv("LowerSeiadCk_SN_20878668.csv")
 LSck$date <- lubridate::mdy_hm(LSck$Date_Time)
-plot(LSck$date, LSck$Temp)
 head(LSck, n = 100) #Need to remove first 4 values 
 tail(LSck) #Need to remove last value
 LSck <- LSck[c(5:35020),] 
 LSck <- LSck%>%filter(date<'2020-08-21 00:00:00'| date > '2020-09-28 00:00:00') #removed data between 21 Aug and 28 Sept when sensor was out of water
 str(LSck) #Now we have 35016  observations
+LSck <- LSck %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- LSck[!complete.cases(LSck),] #No missing data
 missing_data #No missing data
 
@@ -378,9 +360,7 @@ LSck <- left_join(quarterHour,LSck)
 
 #Position dataset into a full year data frame by daily steps
 LSck$day <- lubridate::floor_date(LSck$quarterHour, unit="day") #Bin by day
-head(LSck, n=70) #check the dataset start date
-tail(LSck) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 LSck <- left_join(day, LSck) #join day and dataset
 
@@ -398,6 +378,9 @@ head(May, n = 100) #Need to remove first 3 values
 tail(May, n = 400) #Sensor died in June and removed last several days of data 
 May <- May[c(4:1438,1443:32628),] 
 str(May) #Now we have 32621 observations
+May <- May %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- May[!complete.cases(May),] #No missing data
 missing_data #No missing data
 
@@ -409,9 +392,7 @@ May <- left_join(quarterHour,May)
 
 #Position dataset into a full year data frame by daily steps
 May$day <- lubridate::floor_date(May$quarterHour, unit="day") #Bin by day
-head(May, n=70) #check the dataset start date
-tail(May) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 May <- left_join(day, May) #join day and dataset
 
@@ -429,6 +410,9 @@ head(MayCk, n = 100) #Need to remove first 3 values
 tail(MayCk) 
 MayCk <- MayCk[c(4:35028),] 
 str(MayCk) #Now we have 35025  observations
+MayCk <- MayCk %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- MayCk[!complete.cases(MayCk),]
 missing_data #No missing data
 
@@ -440,9 +424,7 @@ MayCk <- left_join(quarterHour,MayCk)
 
 #Position dataset into a full year data frame by daily steps
 MayCk$day <- lubridate::floor_date(MayCk$quarterHour, unit="day") #Bin by day
-head(MayCk, n=70) #check the dataset start date
-tail(MayCk) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 MayCk <- left_join(day, MayCk) #join day and dataset
 
@@ -462,6 +444,10 @@ head(FG2, n = 50) #Need to remove first 10 values (not in the water yet)
 tail(FG2, n = 50) 
 FG2 <- FG2[c(11:1653,1657:35244),] 
 FG2 <- FG2%>%filter(date<'2020-11-20 00:00:00'| date > '2021-06-01 00:00:00') #removed data between 20 nov and 1 June when sensor was out of water
+str(FG2)
+FG2 <- FG2 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- FG2[!complete.cases(FG2),]
 missing_data #No missing data
 
@@ -473,9 +459,7 @@ FG2 <- left_join(quarterHour,FG2)
 
 #Position dataset into a full year data frame by daily steps
 FG2$day <- lubridate::floor_date(FG2$quarterHour, unit="day") #Bin by day
-head(FG2, n=70) #check the dataset start date
-tail(FG2) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day")
 day <- as.data.frame(day) #convert "day" to data frame
 FG2 <- left_join(day, FG2) #join day and dataset
 
@@ -493,6 +477,9 @@ head(FG3, n = 50) #Need to remove first 8 values (not in the water yet)
 tail(FG3, n = 50) 
 FG3 <- FG3[c(9:1652,1666:35242),] 
 str(FG3) #Now we have 35234  observations
+FG3 <- FG3 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- FG3[!complete.cases(FG3),]
 missing_data #No missing data
 
@@ -504,9 +491,7 @@ FG3 <- left_join(quarterHour,FG3)
 
 #Position dataset into a full year data frame by daily steps
 FG3$day <- lubridate::floor_date(FG3$quarterHour, unit="day") #Bin by day
-head(FG3, n=70) #check the dataset start date
-tail(FG3) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 FG3 <- left_join(day, FG3) #join day and dataset
 
@@ -524,6 +509,9 @@ head(FGck, n = 50)
 tail(FGck, n = 50) 
 FGck <- FGck[c(1:1640,1643:35233),] 
 str(FGck) #Now we have 35231 observations
+FGck <- FGck %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- FGck[!complete.cases(FGck),] 
 missing_data #No missing data
 
@@ -535,9 +523,7 @@ FGck <- left_join(quarterHour,FGck)
 
 #Position dataset into a full year data frame by daily steps
 FGck$day <- lubridate::floor_date(FGck$quarterHour, unit="day") #Bin by day
-head(FGck, n=70) #check the dataset start date
-tail(FGck) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 FGck <- left_join(day, FGck) #join day and dataset
 
@@ -557,6 +543,9 @@ tail(GP1, n = 50) #Need to remove last 8 values (out of water)
 GP1 <- GP1[c(2:1749,1753:35336),]
 GP1 <- GP1%>%filter(date<'2020-07-29 00:00:00'| date > '2020-09-21 00:00:00') #removed data between 29 July and 21 Sept when sensor was out of water
 str(GP1) #Now we have 35335  observations
+GP1 <- GP1 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- GP1[!complete.cases(GP1),] #No missing data
 missing_data #No missing data
 
@@ -568,9 +557,7 @@ GP1 <- left_join(quarterHour,GP1)
 
 #Position dataset into a full year data frame by daily steps
 GP1$day <- lubridate::floor_date(GP1$quarterHour, unit="day") #Bin by day
-head(GP1, n=70) #check the dataset start date
-tail(GP1) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 GP1 <- left_join(day, GP1) #join day and dataset
 
@@ -588,6 +575,9 @@ head(GP2, n = 50) #Need to remove first 2 values (not in the water yet)
 tail(GP2, n = 50)  
 GP2 <- GP2[c(3:1749,1752:35343),] 
 str(GP2) #Now we have 35341  observations
+GP2 <- GP2 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- GP2[!complete.cases(GP2),]
 missing_data #No missing data
 
@@ -597,12 +587,9 @@ quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 m
 quarterHour <- as.data.frame(quarterHour)
 GP2 <- left_join(quarterHour,GP2)
 
-
 #Position dataset into a full year data frame by daily steps
 GP2$day <- lubridate::floor_date(GP2$quarterHour, unit="day") #Bin by day
-head(GP2, n=70) #check the dataset start date
-tail(GP2) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 GP2 <- left_join(day, GP2) #join day and dataset
 
@@ -620,6 +607,9 @@ head(GP3, n = 50) #Need to remove first 2 values (not in the water yet)
 tail(GP3, n = 50) 
 GP3 <- GP3[c(3:1748,1751:35343),] 
 str(GP3) #Now we have 35339  observations
+GP3 <- GP3 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- GP3[!complete.cases(GP3),]
 missing_data #No missing data
 
@@ -631,9 +621,7 @@ GP3 <- left_join(quarterHour,GP3)
 
 #Position dataset into a full year data frame by daily steps
 GP3$day <- lubridate::floor_date(GP3$quarterHour, unit="day") #Bin by day
-head(GP3, n=70) #check the dataset start date
-tail(GP3) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 GP3 <- left_join(day, GP3) #join day and dataset
 
@@ -651,6 +639,9 @@ tail(GPck, n = 50) #Need to remove last 1 value
 GPck <- GPck[c(2:1071,1074:34666),]
 GPck <- GPck%>%filter(date<'2020-08-26 00:00:00'| date > '2020-11-15 00:00:00') #removed data between 26 Aug and 15 Nov when sensor was out of water
 str(GPck) #Now we have 34663  observations
+GPck <- GPck %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- GPck[!complete.cases(GPck),]#No missing data
 missing_data
 
@@ -662,9 +653,7 @@ GPck <- left_join(quarterHour,GPck)
 
 #Position dataset into a full year data frame by daily steps
 GPck$day <- lubridate::floor_date(GPck$quarterHour, unit="day") #Bin by day
-head(GPck, n=70) #check the dataset start date
-tail(GPck) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 GPck <- left_join(day, GPck) #join day and dataset
 
@@ -683,6 +672,9 @@ head(ULout, n = 50) #Need to remove first 22 values (not in the water yet)
 tail(ULout, n = 50) 
 ULout <- ULout[c(23:1943,1946:35520),] 
 str(ULout) #Now we have 1922 observations
+ULout <- ULout %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- ULout[!complete.cases(ULout),]
 missing_data #No missing data
 
@@ -695,9 +687,7 @@ ULout <- left_join(quarterHour,ULout)
 
 #Position dataset into a full year data frame by daily steps
 ULout$day <- lubridate::floor_date(ULout$quarterHour, unit="day") #Bin by day
-head(ULout, n=70) #check the dataset start date
-tail(ULout) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 ULout <- left_join(day, ULout) #join day and dataset
 
@@ -714,20 +704,31 @@ head(UL1, n = 50) #Need to remove first 5 values (not in the water yet)
 tail(UL1, n = 1150) #Need to remove last several days; sensor removed on 12 July 2021
 UL1 <- UL1[c(6:35531),] 
 str(UL1) #Now we have 35526  observations
-missing_data <- UL1[!complete.cases(UL1),] #No missing data
-missing_data
+UL1 <- UL1 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
+missing_data <- UL1[!complete.cases(UL1),] 
+missing_data #Some missing data
+#need to take average of surrounding 2 measurements (2021-01-26 14:45:00), which is row 19504
+##The two rows surrounding 2021-01-26 14:45:00 are 14:30 and 15:00. Both of these temperatures are 7.89. 
+UL1[19504,2] <- mean(7.89,7.89)
+
+#need to remove (2020-07-27 15:58:00), which is row 1938
+#need to remove (2020-12-26 14:50:00), which is row 16527
+#need to remove (2021-01-26 14:44:00), which is row 19503
+#need to remove (2021-01-26 14:46:00), which is row 19505
+UL1 <- UL1[c(1:1937,1939:16526,16528:19502,19504,19506:35510),]
+missing_data <- UL1[!complete.cases(UL1),] 
+missing_data #no missing data
 
 #Position dataset into a full year data frame by 15 min steps
 UL1$quarterHour <- lubridate::floor_date(UL1$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 UL1 <- left_join(quarterHour,UL1)
-
 #Position dataset into a full year data frame by daily steps
 UL1$day <- lubridate::floor_date(UL1$quarterHour, unit="day") #Bin by day
-head(UL1, n=70) #check the dataset start date
-tail(UL1) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 UL1 <- left_join(day, UL1) #join day and dataset
 
@@ -744,6 +745,9 @@ head(UL3, n = 50) #Need to remove first 19 values (not in the water yet)
 tail(UL3, n = 50) 
 UL3 <- UL3[c(20:1943,1947:35513),] 
 str(UL3) #Now we have 35491 observations
+UL3 <- UL3 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- UL3[!complete.cases(UL3),] #No missing data
 missing_data
 
@@ -755,9 +759,7 @@ UL3 <- left_join(quarterHour,UL3)
 
 #Position dataset into a full year data frame by daily steps
 UL3$day <- lubridate::floor_date(UL3$quarterHour, unit="day") #Bin by day
-head(UL3, n=70) #check the dataset start date
-tail(UL3) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 UL3 <- left_join(day, UL3) #join day and dataset
 
@@ -774,6 +776,9 @@ head(ULck, n = 50) #Need to remove first 28 values (not in the water yet)
 tail(ULck, n = 50) 
 ULck <- ULck[c(29:1945,1948:35526),] 
 str(ULck) #Now we have 35496  observations
+ULck <- ULck %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- ULck[!complete.cases(ULck),]
 missing_data #No missing data
 
@@ -785,9 +790,7 @@ ULck <- left_join(quarterHour,ULck)
 
 #Position dataset into a full year data frame by daily steps
 ULck$day <- lubridate::floor_date(ULck$quarterHour, unit="day") #Bin by day
-head(ULck, n=70) #check the dataset start date
-tail(ULck) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 ULck <- left_join(day, ULck) #join day and dataset
 
@@ -806,20 +809,22 @@ head(LL1, n = 50) #Need to remove first 9 values (not in the water yet)
 tail(LL1, n = 50) 
 LL1 <- LL1[c(10:1737,1740:35317),] 
 str(LL1) #Now we have 1728 observations
+LL1 <- LL1 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- LL1[!complete.cases(LL1),]
 missing_data #No missing data
 
-#Position dataset into a full year data ULck by 15 min steps
+#Position dataset into a full year data by 15 min steps
 LL1$quarterHour <- lubridate::floor_date(LL1$date, unit="15 mins") 
 quarterHour <- seq(mdy_hm('7/1/2020 00:00'),mdy_hm('7/13/2021 00:00'),by = "15 mins")
 quarterHour <- as.data.frame(quarterHour)
 LL1 <- left_join(quarterHour,LL1)
 tail(LL1)
+
 #Position dataset into a full year data frame by daily steps
 LL1$day <- lubridate::floor_date(LL1$quarterHour, unit="day") #Bin by day
-head(LL1, n=70) #check the dataset start date
-tail(LL1) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 LL1 <- left_join(day, LL1) #join day and dataset
 
@@ -837,6 +842,9 @@ head(LL2, n = 50) #Need to remove first 7 values (not in the water yet)
 tail(LL2, n = 50) 
 LL2 <- LL2[c(8:1737,1740:35277),] 
 str(LL2) 
+LL2 <- LL2 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- LL2[!complete.cases(LL2),]
 missing_data #No missing data
 
@@ -848,9 +856,7 @@ LL2 <- left_join(quarterHour,LL2)
 
 #Position dataset into a full year data frame by daily steps
 LL2$day <- lubridate::floor_date(LL2$quarterHour, unit="day") #Bin by day
-head(LL2, n=70) #check the dataset start date
-tail(LL2) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day")
 day <- as.data.frame(day) #convert "day" to data frame
 LL2 <- left_join(day, LL2) #join day and dataset
 
@@ -867,6 +873,9 @@ head(LL3, n = 50) #Need to remove first 6 values (not in the water yet)
 tail(LL3, n = 50) #looks ok 
 LL3 <- LL3[c(7:1737,1740:35316),] 
 str(LL3) 
+LL3 %>% 
+  group_by(date) %>% 
+  summarize(Temp = mean(Temp))#Remove duplicates
 missing_data <- LL3[!complete.cases(LL3),]
 missing_data #No missing data
 
@@ -878,9 +887,7 @@ LL3 <- left_join(quarterHour,LL3)
 
 #Position dataset into a full year data frame by daily steps
 LL3$day <- lubridate::floor_date(LL3$quarterHour, unit="day") #Bin by day
-head(LL3, n=70) #check the dataset start date
-tail(LL3) #check the dataset end date
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") #Create an object that goes day by day for whole series
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 LL3 <- left_join(day, LL3) #join day and dataset
 
@@ -915,12 +922,8 @@ saveRDS(airtemp,"airtemp.rds")
 ## Read in Data: Seiad Valley
 ```{r echo = T, results = "hide", messages = F}
 ##Reading in a 6 year temperature time series (15 or 30 min intervals) dataset from Klamath River at Seiad Valley. This dataset is called KSV (Klamath Seiad Valley). Data collected by Karuk Tribe.
-KSV <- read.csv("SeiadValley_KlamathMain_AllData.csv")
-KSV$date <- lubridate::mdy_hm(KSV$Date_Time)#convert dates to POSIXct format 
-
-#Trim the dataset
-head(KSV)
-KSV <- KSV[c(2585:117486),] #Most missing data is between 2015-Feb 2016, so removing the first ~ year of data
+KSV <- read.csv("SeiadValley_KlamathMain_QAQCdata.csv")
+KSV$date <- lubridate::mdy_hm(KSV$TimeStamp)#convert dates to POSIXct format 
 
 #Check for missing data
 missing_data <- KSV[!complete.cases(KSV),] 
@@ -931,13 +934,13 @@ missing_data
 KSV$hour <- lubridate::floor_date(KSV$date, unit="hour") #Bin by hour
 KSV_hourly <- KSV %>% #Summarize recordings to the hourly level (we have a mix of 30 min and 15 min readings)
   group_by(hour) %>% 
-  summarize(mean_temp=mean(Temp))
+  summarize(mean_temp=mean(Temperature))
 
 head(KSV_hourly) #check the dataset start date, use for "hour" sequence
 tail(KSV_hourly) #check the dataset end date, use for "hour" sequence
 
 #Create hourly sequence to ensure all missing data is accounted for
-hour <- seq(mdy_h('5/2/2016 15'),mdy_h('2/1/2022 13'),by = "hour") #Create an object that goes hour by hour for the entire time series 
+hour <- seq(mdy_h('05/02/2016 00'),mdy_h('02/01/2022 23'),by = "hour") #Create an object that goes hour by hour for the entire time series 
 hour <- as.data.frame(hour) #convert "hour" to data frame
 KSV_hourly <- left_join(hour, KSV_hourly) #left join hour and dataset
 
@@ -952,12 +955,12 @@ missing_data #Now we are sure that all the missing hour time steps are included.
 KSV_hourly$zTemp <- zscore(KSV_hourly$mean_temp)
 
 #Convert to time series
-KSV_ts <- ts(KSV_hourly$zTemp, start = c(123, 15), frequency = 24) # This time series starts on 2 May 2016 at 2 am, so it starts on day 123 (leap year) at hour 15 and the frequency is 24 (24 hours per day)
+KSV_ts <- ts(KSV_hourly$zTemp, start = c(123, 0), frequency = 24) # This time series starts on 2 May 2016 at 12 am, so it starts on day 123 (leap year) at hour 0 and the frequency is 24 (24 hours per day)
 ```
 ##Read in Data: Orleans
 ```{r echo = T, results = "hide", messages = F}
 ##Reading in a 6 year temperature time series (15 or 30 min intervals) dataset from Klamath River at Orleans called KO (Klamath Orleans). Data collected by Karuk Tribe.
-KO <- read.csv("Orleans_KlamathMain_AllData.csv")
+KO <- read.csv("Orleans_KlamathMain_QAQCdata.csv")
 KO$date <- lubridate::mdy_hm(KO$Date_Time)#convert dates to POSIXct format 
 tail(KO)
 #Trim the dataset
