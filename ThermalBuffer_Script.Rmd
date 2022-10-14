@@ -1,11 +1,14 @@
 ---
 title: "ThermalBuffer_Script"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # Data wrangling packages
 library(tidyverse)
+library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(patchwork)
@@ -195,17 +198,8 @@ dev.off()
 #Daily Buffering
 ##Data wrangling
 ```{r}
-daily_means_condensed <- readRDS("daily_means_condensed.rds") #mean daily temp values averaged per site 
-daily_means_condensed <- as.data.frame(t(daily_means_condensed))
-daily_means_condensed <- daily_means_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
-
-#Create "day" sequence 
-day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
-day <- as.data.frame(day) #convert "day" to data frame
-daily_means_condensed <-cbind(daily_means_condensed,day)
-
-#Clip to summer only
-daily_means_summer <- daily_means_condensed %>%filter(day>'2020-07-15'& day < '2020-09-15')
+quarterHour_condensed 
+quarterHour_condensed$day <- lubridate::floor_date(quarterHour_condensed$quarterHour, unit="day") #Bin by day
 
 #Create a function for coefficient of variance (CV)
 CV <- function(x){
@@ -215,97 +209,161 @@ CV <- function(x){
 
 ##Individual CVs
 ```{r}
-#Need to use hourly data for this
-#Calulate CV per day and then take all days as a mean
-#for the entire year 
-#take the mean
-#Plot a ts of the CV 
-
 #Alexander Pond 
-CV_AP <- CV(daily_means_summer$AP)
+AP_CV <- quarterHour_condensed %>%       #15 min data
+  group_by(day) %>%                      #Group by day
+  dplyr::select(AP) %>%                  #Select site
+  summarize(CV = CV(AP))                 #Calculate CV per day for one site
+AP_CV_mean <- mean(AP_CV$CV,na.rm=T)     #Take all days as mean over entire year
+plot(AP_CV$day,AP_CV$CV)                 #Plot a time series of CV
 
 #Stender Pond
-CV_SP <- CV(daily_means_summer$SP)
+SP_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(SP) %>%
+  summarize(CV = CV(SP))
+SP_CV_mean <- mean(SP_CV$CV,na.rm=T)
+plot(SP_CV$day,SP_CV$CV)
 
 #Durazo Pond
-CV_Durazo <- CV(daily_means_summer$Durazo)
+Durazo_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(Durazo) %>%
+  summarize(CV = CV(Durazo))
+Durazo_CV_mean <- mean(Durazo_CV$CV,na.rm=T)
+plot(Durazo_CV$day,Durazo_CV$CV)
 
 #Lower Seiad 
-CV_LS <- CV(daily_means_summer$LS)
+LS_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(LS) %>%
+  summarize(CV = CV(LS))
+LS_CV_mean <- mean(LS_CV$CV,na.rm=T)
+plot(LS_CV$day,LS_CV$CV)
 
 #May Pond
-CV_May <- CV(daily_means_summer$May)
+May_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(May) %>%
+  summarize(CV = CV(May))
+May_CV_mean <- mean(May_CV$CV,na.rm=T)
+plot(May_CV$day,May_CV$CV)
 
 #Fish Gulch
-CV_FG <- CV(daily_means_summer$FG)
+FG_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(FG) %>%
+  summarize(CV = CV(FG))
+FG_CV_mean <- mean(FG_CV$CV,na.rm=T)
+plot(FG_CV$day,FG_CV$CV)
 
 #Goodman Pond
-CV_GP <- CV(daily_means_summer$GP)
+GP_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(GP) %>%
+  summarize(CV = CV(GP))
+GP_CV_mean <- mean(GP_CV$CV,na.rm=T)
+plot(GP_CV$day,GP_CV$CV)
 
 #Upper Lawrence
-CV_UL <- CV(daily_means_summer$UL)
+UL_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(UL) %>%
+  summarize(CV = CV(UL))
+UL_CV_mean <- mean(UL_CV$CV,na.rm=T)
+plot(UL_CV$day,UL_CV$CV)
 
 #Lower Lawrence
-CV_LL <- CV(daily_means_summer$LL)
+LL_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(LL) %>%
+  summarize(CV = CV(LL))
+LL_CV_mean <- mean(LL_CV$CV,na.rm=T)
+plot(LL_CV$day,LL_CV$CV)
 
 #Seiad Creek
-CV_SC <- CV(daily_means_summer$SC)
+SC_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(SC) %>%
+  summarize(CV = CV(SC))
+SC_CV_mean <- mean(SC_CV$CV,na.rm=T)
+plot(SC_CV$day,SC_CV$CV)
 
 #Horse Creek
-CV_HC <- CV(daily_means_summer$HC)
+HC_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(HC) %>%
+  summarize(CV = CV(HC))
+HC_CV_mean <- mean(HC_CV$CV,na.rm=T)
+plot(HC_CV$day,HC_CV$CV)
+
 ```
 
 ##CV Ratios
 ```{r}
+#CV Ratios are Creeks/Ponds
+#No Buffering = <1
+#Buffering = >1
+
 #Alexander Pond 
-CV_diff_AP <- CV(daily_means_summer$SC)/CV(daily_means_summer$AP)
+SC_AP <- SC_CV_mean/AP_CV_mean
 
 #Stender Pond
-CV_diff_SP <- CV(daily_means_summer$SC)/CV(daily_means_summer$SP)
+SC_SP <- SC_CV_mean/SP_CV_mean
 
 #Durazo Pond
-CV_diff_Durazo <- CV(daily_means_summer$SC)/CV(daily_means_summer$Durazo)
+SC_Durazo <- SC_CV_mean/Durazo_CV_mean
 
 #Lower Seiad 
-CV_diff_LS <- CV(daily_means_summer$SC)/CV(daily_means_summer$LS)
+SC_LS <- SC_CV_mean/LS_CV_mean
 
 #May Pond
-CV_diff_May <- CV(daily_means_summer$SC)/CV(daily_means_summer$May)
+SC_May <- SC_CV_mean/May_CV_mean
 
 #Fish Gulch
-CV_diff_FG <- CV(daily_means_summer$HC)/CV(daily_means_summer$FG)
+HC_FG <- HC_CV_mean/FG_CV_mean
 
 #Goodman Pond
-CV_diff_GP <- CV(daily_means_summer$HC)/CV(daily_means_summer$GP)
+HC_GP <- HC_CV_mean/GP_CV_mean
 
 #Upper Lawrence
-CV_diff_UL <- CV(daily_means_summer$HC)/CV(daily_means_summer$UL)
+HC_UL <- HC_CV_mean/UL_CV_mean
 
 #Lower Lawrence
-CV_diff_LL <- CV(daily_means_summer$HC)/CV(daily_means_summer$LL)
+HC_LL <- HC_CV_mean/LL_CV_mean
 ```
 
 ##CV Data Table
 ```{r}
 data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Horse Creek","Horse Creek","Horse Creek","Horse Creek"),
-           CreekCV=round(c(CV_SC,CV_SC,CV_SC,CV_SC,CV_SC,CV_HC,CV_HC,CV_HC,CV_HC),2),
+           CreekCV=round(c(SC_CV_mean,SC_CV_mean,SC_CV_mean,SC_CV_mean,SC_CV_mean,HC_CV_mean,HC_CV_mean,HC_CV_mean,HC_CV_mean),2),
            Pond=c("Alexander","Stender","Durazo","Lower Seiad","May","Fish Gulch","Goodman","Upper Lawrence","Lower Lawrence"),
-           PondCV=round(c(CV_AP,CV_SP,CV_Durazo,CV_LS,CV_May,CV_FG,CV_GP,CV_UL,CV_LL),2),
-           CV_Ratio=round(c(CV_diff_AP, 
-                        CV_diff_SP,
-                        CV_diff_Durazo,
-                        CV_diff_LS,
-                        CV_diff_May,
-                        CV_diff_FG,
-                        CV_diff_GP,
-                        CV_diff_UL,
-                        CV_diff_LL),2))
+           PondCV=round(c(AP_CV_mean,SP_CV_mean,Durazo_CV_mean,LS_CV_mean,May_CV_mean,FG_CV_mean,GP_CV_mean,UL_CV_mean,LL_CV_mean),2),
+           CV_Ratio=(round(c(SC_AP, 
+                        SC_SP,
+                        SC_Durazo,
+                        SC_LS,
+                        SC_May,
+                        HC_FG,
+                        HC_GP,
+                        HC_UL,
+                        HC_LL),2)))
 
 ```
 #Figure 3: Time Series Examples Figure
 ```{r}
-quarterHour_condensed
+
+daily_means_condensed <- readRDS('daily_means_condensed.RDS')
+daily_means_condensed <- as.data.frame(t(daily_means_condensed))
+daily_means_condensed <- daily_means_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
+#Create "day" sequence 
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
+day <- as.data.frame(day) #convert "day" to data frame
+
+#Attach day to data frame
+daily_means_condensed <- cbind(daily_means_condensed,day)
 daily_means_condensed$day <- as.POSIXct(daily_means_condensed$day)
+
 mycolors <- met.brewer(name="Archambault",n=4,type="discrete")
 
 p1 <- ggplot()+
