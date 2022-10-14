@@ -198,7 +198,6 @@ dev.off()
 #Daily Buffering
 ##Data wrangling
 ```{r}
-quarterHour_condensed 
 quarterHour_condensed$day <- lubridate::floor_date(quarterHour_condensed$quarterHour, unit="day") #Bin by day
 
 #Create a function for coefficient of variance (CV)
@@ -356,7 +355,6 @@ data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seia
 daily_means_condensed <- readRDS('daily_means_condensed.RDS')
 daily_means_condensed <- as.data.frame(t(daily_means_condensed))
 daily_means_condensed <- daily_means_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
-#Create "day" sequence 
 day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
 day <- as.data.frame(day) #convert "day" to data frame
 
