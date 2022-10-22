@@ -1077,6 +1077,9 @@ KSV_KO_2020$mean_temp.y <- ifelse(is.na(KSV_KO_2020$mean_temp.y), KSV_KO_2020$KS
 #Make a separate predicted vector for plotting purposes
 KSV_KO_2020$predicted <- (ifelse(is.na(KSV_KO_2020$zTemp.y), KSV_KO_2020$KSV_predict, NA))#We already plugged in missing mean_temps for KSV, so use the zTemp variable which is still empty for predicted values. This is just for graphing. 
 
+#Percent interpolated values
+NROW(na.omit(KSV_KO_2020$predicted))/NROW(KSV_KO_2020$predicted) 
+
 ```
 ##Plot predicted KSV values
 ```{r}
