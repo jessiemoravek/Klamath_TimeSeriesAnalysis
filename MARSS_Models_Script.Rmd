@@ -68,6 +68,98 @@ par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
   }
 ```
 
+#Test covariate lags
+##Pull in slightly lagged air temp dataset
+```{r}
+airtemp_lag <- read.csv("SlaterButteAirTemp_2020_2021_lag.csv")
+
+#Convert Fahrenheit to Celsius
+airtemp_lag$TAVG <- fahrenheit.to.celsius(airtemp_lag$TAVG)
+airtemp_lag$TMAX <- fahrenheit.to.celsius(airtemp_lag$TMAX)
+airtemp_lag$TMIN <- fahrenheit.to.celsius(airtemp_lag$TMIN)
+
+#Convert dates to appropriate format
+airtemp_lag$date <- lubridate::mdy(airtemp_lag$DATE)
+missing_data <- airtemp_lag[!complete.cases(airtemp_lag),] #No missing data
+missing_data
+airtemp_lag$day <- lubridate::floor_date(airtemp_lag$date, unit="day")
+covariate_lag <- (t(airtemp_lag$TAVG))
+
+#z score to fit with our data
+z_covariate_lag <- zscore(covariate_lag)
+```
+
+```{r}
+#t-0 no lag (1 July 2020 - 13 July 2021)
+#Use original z_covariate matrix
+str(z_covariate)
+#t-1 lag (30 June 2020 - 12 July 2021)
+z_covariate_t1 <- z_covariate_lag[c(16:393)]
+z_covariate_t1 <- as.matrix(t(z_covariate_t1))
+str(z_covariate_t1)
+
+#t-2 lag (29 June 2020 - 11 July 2021)
+z_covariate_t2 <- z_covariate_lag[c(15:392)]
+z_covariate_t2 <- as.matrix(t(z_covariate_t2))
+str(z_covariate_t2)
+
+#t-3 lag (28 June 2020 - 10 July 2021)
+z_covariate_t3 <- z_covariate_lag[c(14:391)]
+z_covariate_t3 <- as.matrix(t(z_covariate_t3))
+str(z_covariate_t3)
+```
+
+
+```{r}
+#test best model(mod1) with lags
+#t-1 lag
+mod1a = mod1
+mod1a$c = z_covariate_t1
+mod1a.fit = MARSS(z_daily_means_condensed, model=mod1a)
+mod1a_params =MARSSparamCIs(mod1a.fit)
+MARSSparamCIs(mod1a.fit)
+saveRDS(mod1a_params,"mod1a_params.RDS")
+#AICc -9832.204 (better than mod1)
+
+#t-2 lag
+mod1b = mod1
+mod1b$c = z_covariate_t2
+mod1b.fit = MARSS(z_daily_means_condensed, model=mod1b)
+mod1b_params =MARSSparamCIs(mod1b.fit)
+MARSSparamCIs(mod1b.fit)
+saveRDS(mod1b_params,"mod1b_params.RDS")
+#AICc -9526.632 (worse than mod1)
+
+#t-3 lag
+mod1c = mod1
+mod1c$c = z_covariate_t3
+mod1c.fit = MARSS(z_daily_means_condensed, model=mod1c)
+mod1c_params =MARSSparamCIs(mod1c.fit)
+MARSSparamCIs(mod1c.fit)
+saveRDS(mod1c_params,"mod1c_params.RDS")
+#AICc -9418.625  (worse than mod1)
+
+#Final decision: use t-1 covariate lag (dataset z_covariate_t1)
+#All subsequent models use t-1 lag in covarite dataset
+```
+
+# Hypothesis 1 (with lag): all states have different levels of stochastic (Q) and deterministic (C) variability 
+```{r}
+# convention: name modhypothesis
+mod1 = list()
+mod1$A = "zero" 
+mod1$Z = "identity"
+mod1$R = "zero" 
+mod1$Q = "diagonal and unequal" 
+mod1$B = "diagonal and unequal" 
+mod1$U = "zero"  
+mod1$C = "unequal" 
+mod1$c = z_covariate_t1
+mod1.fit = MARSS(z_daily_means_condensed, model=mod1)
+mod1_params =MARSSparamCIs(mod1.fit)
+MARSSparamCIs(mod1.fit)
+saveRDS(mod1_params,"mod1_params.RDS")
+```
 # Hypothesis 2: all states have save levels of stochastic (Q) and deterministic (C) variability
 ```{r}
 # convention: name modhypothesis
@@ -79,7 +171,7 @@ mod2$Q = "diagonal and equal"
 mod2$B = "diagonal and equal" 
 mod2$U = "zero"  
 mod2$C = "equal" 
-mod2$c = z_covariate
+mod2$c = z_covariate_t1
 mod2.fit = MARSS(z_daily_means_condensed, model=mod2)
 mod2.params =MARSSparamCIs(mod2.fit)
 MARSSparamCIs(mod2.fit)
@@ -133,7 +225,7 @@ mod3$Q = Q
 mod3$B = Q
 mod3$U = "zero"  
 mod3$C = matrix(hypothesis) 
-mod3$c = z_covariate
+mod3$c = z_covariate_t1
 mod3.fit = MARSS(z_daily_means_condensed, model=mod3)
 mod3.params =MARSSparamCIs(mod3.fit)
 MARSSparamCIs(mod3.fit)
@@ -188,7 +280,7 @@ mod4$Q = Q
 mod4$B = Q
 mod4$U = "zero"  
 mod4$C = matrix(hypothesis2) 
-mod4$c = z_covariate
+mod4$c = z_covariate_t1
 mod4.fit = MARSS(z_daily_means_condensed, model=mod4)
 mod4.params =MARSSparamCIs(mod4.fit)
 MARSSparamCIs(mod4.fit)
