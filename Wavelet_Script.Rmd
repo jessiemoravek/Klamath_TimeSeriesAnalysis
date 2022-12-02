@@ -66,6 +66,7 @@ ts.plot(APH_ts,main="Temperature",ylab = "Temperature (C)", xlab = "Time")
 y <- APH_ts
 date_s <- APH$hour
 y_na <- ifelse(is.na(y),0,NA)
+length(which(y_na == 0))/length(y)
 
 fit <- auto.arima(y,trace=TRUE) #fit limited number of models (faster)
 summary(fit) #Take a closer look at the best fitted model
@@ -229,6 +230,7 @@ ts.plot(SPH_ts,main="Temperature",ylab = "Temperature (C)", xlab = "Time")
 y2 <- SPH_ts
 date_s2 <- SPH$hour
 y_na2 <- ifelse(is.na(y2),0,NA)
+length(which(y_na2 == 0))/length(y2)
 
 fit2 <- auto.arima(y2,trace=TRUE) #fit limited number of models (faster)
 summary(fit2) #Take a closer look at the best fitted model

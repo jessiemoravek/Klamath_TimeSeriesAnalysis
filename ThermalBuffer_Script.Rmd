@@ -83,12 +83,14 @@ b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")
 
 #ANOVA
 data_summer_SC <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
-shapiro.test(data_summer_SC$value) #check for normality
 leveneTest(value ~ site, data = data_summer_SC) #check for equal variances
 anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
 summary.aov(anova_SC)
 TukeyHSD(anova_SC) #posthoc analysis
 report(anova_SC)
+anova_SC_residuals <- residuals(object = anova_SC )
+shapiro.test(x = anova_SC_residuals) #check for normality
+
 ```
 
 ###Horse Creek
@@ -107,12 +109,13 @@ b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
 
 #ANOVA
 data_summer_HC <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
-shapiro.test(data_summer_HC$value) #check for normality
 leveneTest(value ~ site, data = data_summer_HC) #check for equal variances
 anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
 summary.aov(anova_HC)
 TukeyHSD(anova_HC) #posthoc analysis
 report(anova_HC)
+anova_HC_residuals <- residuals(object = anova_HC )
+shapiro.test(x = anova_HC_residuals) #check for normality
 ```
 
 ##Winter 
@@ -151,7 +154,6 @@ b3 <- ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")
 
 #ANOVA
 data_winter_SC <- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
-shapiro.test(data_winter_SC$value) #check for normality
 leveneTest(value ~ site, data = data_winter_SC) #check for equal variances
 #variances not equal, need to transform
 data_winter_SC$trans <- log(data_winter_SC$value)
@@ -162,6 +164,8 @@ anova_SC2 <- aov(trans ~ site, data = data_winter_SC) #run one way anova
 summary.aov(anova_SC2)
 TukeyHSD(anova_SC2) #posthoc analysis
 report(anova_SC2)
+anova_SC2_residuals <- residuals(object = anova_SC2 )
+shapiro.test(x = anova_SC2_residuals) #check for normality
 
 ```
 
@@ -181,12 +185,16 @@ b4 <- ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
 
 #ANOVA
 data_winter_HC <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
-shapiro.test(data_winter_HC$value) #check for normality
 leveneTest(value ~ site, data = data_winter_HC) #check for equal variances
 anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
 summary.aov(anova_HC2)
 TukeyHSD(anova_HC2) #posthoc analysis
 report(anova_HC2)
+anova_HC2_residuals <- residuals(object = anova_HC2 )
+shapiro.test(x = anova_HC2_residuals) #check for normality
+
+
+
 ```
 ##Boxplot Figure
 ```{r}
