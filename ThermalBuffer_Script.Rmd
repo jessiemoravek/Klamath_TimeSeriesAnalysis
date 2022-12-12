@@ -83,6 +83,8 @@ b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")
 
 #ANOVA
 data_summer_SC <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
+saveRDS(data_summer_SC,"data_summer_SC.RDS")
+write.csv(data_summer_SC,"data_summer_SC.csv")
 leveneTest(value ~ site, data = data_summer_SC) #check for equal variances
 anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
 summary.aov(anova_SC)
