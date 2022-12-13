@@ -79,20 +79,64 @@ b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")
                     labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
                                "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
   scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
+```
+
+####ANOVA Seiad Creek 
+```{r}
+data_summer_SC<- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
+data_summer_SC$site<-as.factor(data_summer_SC$site)
+
+#Check boxplots
+ggplot(data_summer_SC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
 
 
-#ANOVA
-data_summer_SC <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
-saveRDS(data_summer_SC,"data_summer_SC.RDS")
-write.csv(data_summer_SC,"data_summer_SC.csv")
-leveneTest(value ~ site, data = data_summer_SC) #check for equal variances
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_summer_SC) #Levene's Test for for equal variances fails
 anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
-summary.aov(anova_SC)
-TukeyHSD(anova_SC) #posthoc analysis
-report(anova_SC)
-anova_SC_residuals <- residuals(object = anova_SC )
-shapiro.test(x = anova_SC_residuals) #check for normality
 
+anova_SC_residuals <- residuals(object = anova_SC ) #Pull out residuals
+
+ggplot(anova_SC, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals do not look great. 
+
+#Check normality
+shapiro.test(x = anova_SC_residuals) #check for normality. Shows some issue here too. 
+
+#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
+##Log
+data_summer_SC<- data_summer_SC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_summer_SC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_summer_SC<- data_summer_SC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_summer_SC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_summer_SC<- data_summer_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_summer_SC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_summer_SC) 
+leveneTest(log10value ~ site, data = data_summer_SC) 
+leveneTest(sqrtvalue ~ site, data = data_summer_SC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
+summary(anova_SC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_summer_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+
+#Posthoc analysis
+TukeyHSD(anova_SC) 
+report(anova_SC)
 ```
 
 ###Horse Creek
@@ -108,16 +152,63 @@ b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
                     labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
                                "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
   scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
+```
 
+####ANOVA Horse Creek
+```{r}
 #ANOVA
 data_summer_HC <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
-leveneTest(value ~ site, data = data_summer_HC) #check for equal variances
+data_summer_HC$site<-as.factor(data_summer_HC$site)
+
+#Check boxplots
+ggplot(data_summer_HC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
+
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_summer_HC) #Levene's Test for for equal variances fails
 anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
-summary.aov(anova_HC)
-TukeyHSD(anova_HC) #posthoc analysis
+anova_HC_residuals <- residuals(object = anova_HC ) #Pull out residuals
+
+ggplot(anova_HC, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals do not look great. 
+
+#Check normality
+shapiro.test(x = anova_HC_residuals) #check for normality. Shows some issue here too. 
+
+#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
+##Log
+data_summer_HC<- data_summer_HC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_summer_HC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_summer_HC<- data_summer_HC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_summer_HC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_summer_HC<- data_summer_HC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_summer_HC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_summer_HC) 
+leveneTest(log10value ~ site, data = data_summer_HC) 
+leveneTest(sqrtvalue ~ site, data = data_summer_HC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
+summary(anova_HC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_summer_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+
+#Posthoc analysis
+TukeyHSD(anova_HC) 
 report(anova_HC)
-anova_HC_residuals <- residuals(object = anova_HC )
-shapiro.test(x = anova_HC_residuals) #check for normality
 ```
 
 ##Winter 
@@ -153,22 +244,65 @@ b3 <- ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")
                     labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
                                "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
   scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
+```
 
+####ANOVA Seiad Creek 
+```{r}
 #ANOVA
-data_winter_SC <- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
-leveneTest(value ~ site, data = data_winter_SC) #check for equal variances
-#variances not equal, need to transform
-data_winter_SC$trans <- log(data_winter_SC$value)
-leveneTest(trans ~ site, data = data_winter_SC)
-#variances equal with log transformation
+data_winter_SC<- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
+data_winter_SC$site<-as.factor(data_winter_SC$site)
 
-anova_SC2 <- aov(trans ~ site, data = data_winter_SC) #run one way anova
-summary.aov(anova_SC2)
-TukeyHSD(anova_SC2) #posthoc analysis
-report(anova_SC2)
-anova_SC2_residuals <- residuals(object = anova_SC2 )
-shapiro.test(x = anova_SC2_residuals) #check for normality
+#Check boxplots
+ggplot(data_winter_SC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
 
+
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_winter_SC) #Levene's Test for for equal variances fails
+anova_SC <- aov(value ~ site, data = data_winter_SC) #run one way anova
+
+anova_SC_residuals <- residuals(object = anova_SC ) #Pull out residuals
+
+ggplot(anova_SC, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals look ok. 
+
+#Check normality
+shapiro.test(x = anova_SC_residuals) #check for normality. Seems ok. 
+
+#The preliminary inspection of raw data and residuals are fine, but let's try transformations just in case.
+##Log
+data_winter_SC<- data_winter_SC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_winter_SC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_winter_SC<- data_winter_SC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_winter_SC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_winter_SC<- data_winter_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_winter_SC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_winter_SC) 
+leveneTest(log10value ~ site, data = data_winter_SC) 
+leveneTest(sqrtvalue ~ site, data = data_winter_SC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_SC <- aov(value ~ site, data = data_winter_SC) #run one way anova
+summary(anova_SC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_winter_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+
+#Posthoc analysis
+TukeyHSD(anova_SC) 
+report(anova_SC)
 ```
 
 ###Horse Creek
@@ -184,19 +318,63 @@ b4 <- ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
                     labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
                                "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
   scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
+```
 
+####ANOVA Horse Creek 
+```{r}
 #ANOVA
 data_winter_HC <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
-leveneTest(value ~ site, data = data_winter_HC) #check for equal variances
-anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
-summary.aov(anova_HC2)
-TukeyHSD(anova_HC2) #posthoc analysis
-report(anova_HC2)
-anova_HC2_residuals <- residuals(object = anova_HC2 )
-shapiro.test(x = anova_HC2_residuals) #check for normality
+data_winter_HC$site<-as.factor(data_winter_HC$site)
 
+#Check boxplots
+ggplot(data_winter_HC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
 
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_winter_HC) #Levene's Test for for equal variances fails
+anova_HC <- aov(value ~ site, data = data_winter_HC) #run one way anova
 
+anova_HC_residuals <- residuals(object = anova_HC ) #Pull out residuals
+
+ggplot(anova_HC, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals are ok, not great. 
+
+#Check normality
+shapiro.test(x = anova_SC_residuals) #check for normality. Shows some issue here too. 
+
+#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
+##Log
+data_winter_HC<- data_winter_HC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_winter_HC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_winter_HC<- data_winter_HC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_winter_HC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_winter_HC<- data_winter_HC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_winter_HC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_winter_HC) 
+leveneTest(log10value ~ site, data = data_winter_HC) 
+leveneTest(sqrtvalue ~ site, data = data_winter_HC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_HC <- aov(value ~ site, data = data_winter_HC) #run one way anova
+summary(anova_HC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_winter_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+
+TukeyHSD(anova_HC) 
+report(anova_HC)
 ```
 ##Boxplot Figure
 ```{r}
