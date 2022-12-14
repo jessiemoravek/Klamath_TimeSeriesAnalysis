@@ -18,6 +18,7 @@ library(report)
 library(car)
 library(multcomp)
 library(MetBrewer)
+library(multcompView)
 
 # Time series analysis packages
 library(MARSS)
@@ -64,39 +65,28 @@ daily_maxs_condensed <- cbind(daily_maxs_condensed,day)
 #Format data long
 daily_max_long <- gather(daily_maxs_condensed, site, value, -day)
 data_summer <- daily_max_long %>%filter(day>'2020-07-15'& day < '2020-09-15')
+
+#Make a column for habitat
+data_summer['habitat'] <- NA
+data_summer$habitat <- with(data_summer, ifelse(site == "SC" | site == "HC",as.character("creek"), as.character("pond")))
 ```
 
 ###Seiad Creek 
-```{r}
-#Boxplot
-b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
-  geom_boxplot(aes(x = site, value, col = day))+
-  labs(title = "(a) Seiad Creek, 15 July - 15 September")+
-  theme_classic()+
-  theme(text=element_text(size=16), axis.title.x=element_blank())+
-  scale_x_discrete(name ="Site", 
-                   limits = c("AP","SP","Durazo","LS","May","SC"),
-                    labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
-                               "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
-  scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
-```
-
-####ANOVA Seiad Creek 
+####ANOVA 
 ```{r}
 data_summer_SC<- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
 data_summer_SC$site<-as.factor(data_summer_SC$site)
+data_summer_SC$habitat<-as.factor(data_summer_SC$habitat)
+write.csv(data_summer_SC,"data_summer_SC.csv")
 
 #Check boxplots
 ggplot(data_summer_SC, aes(x=site, y=value)) + 
   geom_boxplot() + theme_classic()
 
-
 #Variances are okay, but not great. Now check the residuals.
-leveneTest(value ~ site, data = data_summer_SC) #Levene's Test for for equal variances fails
-anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
-
+leveneTest(value ~ site, data = data_summer_SC) #Levene's Test fails
+anova_SC <- aov(value~site*habitat, data = data_summer_SC) #run one way anova
 anova_SC_residuals <- residuals(object = anova_SC ) #Pull out residuals
-
 ggplot(anova_SC, aes(x = .fitted, y = .resid)) +
   geom_point() + theme_classic()
 #Residuals do not look great. 
@@ -119,7 +109,6 @@ ggplot(data_summer_SC, aes(x=site, y=log10value)) +
 data_summer_SC<- data_summer_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
 ggplot(data_summer_SC, aes(x=site, y=sqrtvalue)) + 
   geom_boxplot() + theme_classic()
-
 ##They all look about the same
 
 leveneTest(logvalue ~ site, data = data_summer_SC) 
@@ -128,31 +117,40 @@ leveneTest(sqrtvalue ~ site, data = data_summer_SC)
 ##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
 
 #Anova (untransformed)
-anova_SC <- aov(value ~ site, data = data_summer_SC) #run one way anova
+anova_SC <- aov(value~site*habitat, data = data_summer_SC) #run one way anova
 summary(anova_SC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
 
-#To be safe, let's check a non-parametric test to see if we get a similar result.
-kruskal.test(value ~ site, data = data_summer_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
-
-#Posthoc analysis
-TukeyHSD(anova_SC) 
-report(anova_SC)
 ```
+####PostHoc
+```{r}
+#Posthoc analysis
+anova_SC <- aov(value ~ site*habitat, data = data_summer_SC)
+summary(anova_SC)##Note the degrees of freedom. 
+tukey<-TukeyHSD(anova_SC)
+print(tukey)
 
-###Horse Creek
+##To help label
+groups <- multcompLetters4(anova_SC, tukey)
+print(groups)
+```
+####Boxplot
 ```{r}
 #Boxplot
-b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
+b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
   geom_boxplot(aes(x = site, value, col = day))+
-  labs(title = "(b) Horse Creek, 15 July - 15 September")+
+  labs(title = "(a) Seiad Creek, 15 July - 15 September")+
   theme_classic()+
   theme(text=element_text(size=16), axis.title.x=element_blank())+
   scale_x_discrete(name ="Site", 
-                   limits = c("FG","UL","LL","GP","HC"),
-                    labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
-                               "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
+                   limits = c("AP","SP","Durazo","LS","May","SC"),
+                    labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
+                               "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
   scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
+
+b1
 ```
+
+###Horse Creek
 
 ####ANOVA Horse Creek
 ```{r}
@@ -205,10 +203,38 @@ summary(anova_HC) ##This is CRAZY significant. Even if we were way off on our as
 
 #To be safe, let's check a non-parametric test to see if we get a similar result.
 kruskal.test(value ~ site, data = data_summer_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
-
+ 
+```
+####PostHoc
+```{r}
 #Posthoc analysis
-TukeyHSD(anova_HC) 
-report(anova_HC)
+anova_HC <- aov(value ~ site*habitat, data = data_summer_HC)
+summary(anova_HC)##Note the degrees of freedom. 
+tukey2<-TukeyHSD(anova_HC)
+print(tukey2)
+
+ggplot(data_summer_HC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
+#Looking at the eyeball test, It's not Crazy that Tukey would be picking up these differences. Remember, the ANOVA is testing for differences in means, so the black bar does seem to be quite different in most cases, even with the error overlap. 
+
+##To help you label
+groups2 <- multcompLetters4(anova_2C, tukey2)
+print(groups2)
+```
+
+####Boxplot
+```{r}
+#Boxplot
+b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
+  geom_boxplot(aes(x = site, value, col = day))+
+  labs(title = "(b) Horse Creek, 15 July - 15 September")+
+  theme_classic()+
+  theme(text=element_text(size=16), axis.title.x=element_blank())+
+  scale_x_discrete(name ="Site", 
+                   limits = c("FG","UL","LL","GP","HC"),
+                    labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
+                               "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
+  scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
 ```
 
 ##Winter 
