@@ -283,6 +283,7 @@ date2$ID <- seq.int(nrow(date2)) #give that a unique ID that aligns with x
 y_inter2_df <- merge(x2,date2,"ID") #merge the two dataframes
 colnames(y_inter2_df)<-c("ID","temp","date") #rename columns
 saveRDS(y_inter2_df,"y_inter2_df.rds")
+y_inter2_df <- readRDS("y_inter2_df.RDS")
 ```
 ##Check for NAs
 ```{r}
