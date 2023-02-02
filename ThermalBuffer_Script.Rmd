@@ -140,7 +140,7 @@ print(groups)
 #Boxplot
 b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
   geom_boxplot(aes(x = site, value, col = day))+
-  labs(title = "(a) Seiad Creek, 15 July - 15 September")+
+  labs(title = "(a) Seiad, 15 July - 15 September")+
   theme_classic()+
   theme(text=element_text(size=16), axis.title.x=element_blank())+
   scale_x_discrete(name ="Site", 
@@ -225,7 +225,7 @@ print(groups)
 #Boxplot
 b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
   geom_boxplot(aes(x = site, value, col = day))+
-  labs(title = "(b) Horse Creek, 15 July - 15 September")+
+  labs(title = "(b) Horse, 15 July - 15 September")+
   theme_classic()+
   theme(text=element_text(size=16), axis.title.x=element_blank())+
   scale_x_discrete(name ="Site", 
@@ -331,7 +331,7 @@ print(groups)
 #Boxplot
 b3 <- ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")))+
   geom_boxplot(aes(x = site, value, col = day))+
-  labs(title = "(c) Seiad Creek, 15 December - 15 February")+
+  labs(title = "(c) Seiad, 15 December - 15 February")+
   theme_classic()+
   theme(text=element_text(size=16))+
   scale_x_discrete(name ="Site", 
@@ -416,7 +416,7 @@ print(groups)
 #Boxplot
 b4 <- ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
   geom_boxplot(aes(x = site, value, col = day))+
-  labs(title = "(d) Horse Creek, 15 December - 15 February")+
+  labs(title = "(d) Horse, 15 December - 15 February")+
   theme_classic()+
   theme(text=element_text(size=16))+
   scale_x_discrete(name ="Site", 
@@ -662,4 +662,102 @@ ggplot()+
   scale_y_continuous("Hourly Temperature (C)") 
 dev.off()
 ```
+#Air temp effects (from MARSS_Models_Script)
+```{r}
+mod1_params <- readRDS("mod1_params.RDS")
+mod1_df <- broom::tidy(mod1_params)
+mod1_df_clip <- mod1_df[c(37:48),]
+mod1_df_clip$name <- c("Alexander","Stender","Durazo","LowerSeiad","May","FishGulch","Goodman","UpperLaw","LowerLaw","SeiadCreek","HorseCreek","KlamathRiver")
 
+mod1_df_clip$name <- factor(mod1_df_clip$name, levels = c("Alexander","Stender","Durazo","LowerSeiad","May","SeiadCreek","FishGulch","Goodman","UpperLaw","LowerLaw","HorseCreek","KlamathRiver"))
+
+
+ggplot()+
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Sites",
+       y = "Air Temperature Effects") +
+  ggtitle("Air Temperature Effects") +
+  theme_classic()+
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+```
+
+
+#Combined Figures 
+##Option1
+```{r}
+f3a <- ggplot()+
+    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = HC), color ="#ababab", size = 1) +
+    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = UL), color ="#D3D3D3", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = HC), color = "#e78429", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = UL), color = "#88a0dc", size = 1) +
+  labs(title = "Upper Lawrence Pond and Horse Creek", x = "Date", y = "Temperature (C)")+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+f3b <- ggplot()+
+  geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
+  geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
+  labs(x = "Date",
+       y = "Hourly Temperature (C)",
+       title = "May Pond and Seiad Creek, August 2020")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "bottom")+
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
+  scale_y_continuous("Hourly Temperature (C)") 
+
+f3c <- ggplot()+
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Sites",
+       y = "Air Temperature Effects") +
+  ggtitle("Air Temperature Effects") +
+  theme_classic()+
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+
+png("Fig_Figure3Option1.png",width = 1000, height = 700)
+(f3a + f3b) / (f3c)
+dev.off()
+```
+
+##Option2
+```{r}
+f3a <- ggplot()+
+    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = UL), color ="#D3D3D3", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = UL), color = "#88a0dc", size = 1) +
+  labs(title = "Upper Lawrence Pond", x = "Date", y = "Temperature (C)")+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))
+
+f3b <- ggplot()+
+    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = HC), color ="#ababab", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = HC), color = "#e78429", size = 1) +
+  labs(title = "Horse Creek", x = "Date", y = "Temperature (C)")+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))
+
+f3c <- ggplot()+
+  geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
+  geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
+  labs(x = "Date",
+       y = "Hourly Temperature (C)",
+       title = "May Pond and Seiad Creek, August 2020")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "bottom")+
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
+  scale_y_continuous("Hourly Temperature (C)") 
+
+f3d <- ggplot()+
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Sites",
+       y = "Air Temperature Effects") +
+  ggtitle("Air Temperature Effects") +
+  theme_classic()+
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+
+png("Fig_Figure3Option2.png",width = 1000, height = 700)
+(f3a + f3b) / (f3c + f3d)
+dev.off()
+```

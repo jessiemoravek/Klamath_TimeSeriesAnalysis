@@ -401,6 +401,8 @@ May_daily <- May %>%
   group_by(day) %>% 
   summarize(mean_temp=mean(Temp),max_temp=max(Temp), min_temp=min(Temp), amp_temp=(max(Temp)-min(Temp)))
 saveRDS(May,"May.rds")
+
+ 
 ```
 
 ```{r, include = FALSE}
@@ -1176,7 +1178,7 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   labs(x = "day", y = "site", color = "Legend")+
   theme_classic()+
   scale_color_manual(values = color, labels = c("AP1","AP3"))
-#need to remove AP1
+#need to remove AP3 (artificially hot)
 ```
 
 ###Stender Pond
@@ -1354,19 +1356,19 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
 #Matrix of transformed data with 12 sites (quarterHour_temps, daily_means_condensed)
 ```{r}
 #Hourly
-quarterHour_condensed <- cbind(AP = quarterHour_temps$AP3, SP = quarterHour_temps$SP, Durazo = quarterHour_temps$Durazo, LS = quarterHour_temps$LS, May = quarterHour_temps$May, FG = quarterHour_temps$FG3, GP = quarterHour_temps$GP, UL = quarterHour_temps$UL, LL = quarterHour_temps$LL, SC = quarterHour_temps$SC, HC = quarterHour_temps$HC, KSV = quarterHour_temps$KSV)
+quarterHour_condensed <- cbind(AP = quarterHour_temps$AP1, SP = quarterHour_temps$SP, Durazo = quarterHour_temps$Durazo, LS = quarterHour_temps$LS, May = quarterHour_temps$May, FG = quarterHour_temps$FG3, GP = quarterHour_temps$GP, UL = quarterHour_temps$UL, LL = quarterHour_temps$LL, SC = quarterHour_temps$SC, HC = quarterHour_temps$HC, KSV = quarterHour_temps$KSV)
 quarterHour_condensed <- as.matrix(t(quarterHour_condensed))
 
 #Daily Mean
-daily_means_condensed <- cbind(AP = daily_means$AP3, SP = daily_means$SP, Durazo = daily_means$Durazo, LS = daily_means$LS, May = daily_means$May, FG = daily_means$FG3, GP = daily_means$GP, UL = daily_means$UL, LL = daily_means$LL, SC = daily_means$SC, HC = daily_means$HC, KSV = daily_means$KSV)
+daily_means_condensed <- cbind(AP = daily_means$AP1, SP = daily_means$SP, Durazo = daily_means$Durazo, LS = daily_means$LS, May = daily_means$May, FG = daily_means$FG3, GP = daily_means$GP, UL = daily_means$UL, LL = daily_means$LL, SC = daily_means$SC, HC = daily_means$HC, KSV = daily_means$KSV)
 daily_means_condensed <- as.matrix(t(daily_means_condensed))
 
 #Daily Max
-daily_maxs_condensed <- cbind(AP = daily_maxs$AP3, SP = daily_maxs$SP, Durazo = daily_maxs$Durazo, LS = daily_maxs$LS, May = daily_maxs$May, FG = daily_maxs$FG3, GP = daily_maxs$GP, UL = daily_maxs$UL, LL = daily_maxs$LL, SC = daily_maxs$SC, HC = daily_maxs$HC, KSV = daily_maxs$KSV)
+daily_maxs_condensed <- cbind(AP = daily_maxs$AP1, SP = daily_maxs$SP, Durazo = daily_maxs$Durazo, LS = daily_maxs$LS, May = daily_maxs$May, FG = daily_maxs$FG3, GP = daily_maxs$GP, UL = daily_maxs$UL, LL = daily_maxs$LL, SC = daily_maxs$SC, HC = daily_maxs$HC, KSV = daily_maxs$KSV)
 daily_maxs_condensed <- as.matrix(t(daily_maxs_condensed))
 
 #Daily Min
-daily_mins_condensed <- cbind(AP = daily_mins$AP3, SP = daily_mins$SP, Durazo = daily_mins$Durazo, LS = daily_mins$LS, May = daily_mins$May, FG = daily_mins$FG3, GP = daily_mins$GP, UL = daily_mins$UL, LL = daily_mins$LL, SC = daily_mins$SC, HC = daily_mins$HC, KSV = daily_mins$KSV)
+daily_mins_condensed <- cbind(AP = daily_mins$AP1, SP = daily_mins$SP, Durazo = daily_mins$Durazo, LS = daily_mins$LS, May = daily_mins$May, FG = daily_mins$FG3, GP = daily_mins$GP, UL = daily_mins$UL, LL = daily_mins$LL, SC = daily_mins$SC, HC = daily_mins$HC, KSV = daily_mins$KSV)
 daily_mins_condensed <- as.matrix(t(daily_mins_condensed))
 ```
 
