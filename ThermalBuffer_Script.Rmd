@@ -761,3 +761,37 @@ png("Fig_Figure3Option2.png",width = 1000, height = 700)
 (f3a + f3b) / (f3c + f3d)
 dev.off()
 ```
+
+##Option3
+```{r}
+#f9d14a
+f3a <- ggplot()+
+    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = HC), color ="#e78429", size = 1) +
+    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = UL), color ="#88a0dc", size = 1) +
+  labs(title = "Upper Lawrence Pond and Horse Creek", x = "Date", y = "Temperature (C)")+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+f3b <- ggplot()+
+  geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
+  geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
+  labs(x = "Date",
+       y = "Hourly Temperature (C)",
+       title = "May Pond and Seiad Creek, August 2020")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "bottom")+
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
+  scale_y_continuous("Hourly Temperature (C)") 
+
+f3c <- ggplot()+
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Sites",
+       y = "Air Temperature Effects") +
+  ggtitle("Air Temperature Sensitivity (C)") +
+  theme_classic()+
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+
+png("Fig_Figure3Option3.png",width = 1000, height = 700)
+(f3a + f3b) / (f3c)
+dev.off()
+```
