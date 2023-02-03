@@ -146,8 +146,11 @@ saveRDS(APH.w,"APH.w.rds")
 APH.w <- readRDS("APH.w.rds")
 
 png("Fig_APH_Wavelet.png", width = 800, height = 500)
-wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond Wavelet",  
-         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
+wt.image(APH.w, color.key = "quantile", n.levels = 100, main = "Alexander Pond Wavelet",  
+         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), 
+         label.time.axis=TRUE,
+         show.date=TRUE,
+         label.period.axis=TRUE,
          periodlab = "period (days)")
 dev.off()
 ```
@@ -171,22 +174,6 @@ ggplot()+
   theme(text=element_text(size=16))
 dev.off()
 
-```
-##Put both graphs together
-```{r}
-layout(matrix(c(1,2), nrow=2),
-   heights=6:1, widths=8:8)
-layout.show(n=2)
-par(mfrow=c(2,1))
-wt.image(APH.w, color.key = "quantile", n.levels = 250, main = "Alexander Pond Wavelet",  
-         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
-         periodlab = "period (days)")
-ggplot()+
-  geom_line(data = power_day, aes(x = date, y = power))+
-  labs(x = "Date",
-       y = "Power")+
-  theme_classic()+
-  theme(text=element_text(size=16))
 ```
 
 #STENDER
@@ -335,6 +322,7 @@ dev.off()
 
 ```
 
+
 #FIGURES
 ##Alexander
 ###Interpolate without z-scores
@@ -443,7 +431,7 @@ saveRDS(y_inter4_df,"y_inter4_df.rds")
 missing_data <- y_inter4_df[!complete.cases(y_inter4_df),] 
 missing_data 
 ```
-
+##Graph
 ```{r}
 y_inter3_df <- readRDS("y_inter3_df.rds")
 y_inter4_df <- readRDS("y_inter4_df.rds")
@@ -475,3 +463,51 @@ png("Fig_AlexStenderHistorical.png",width = 1000, height = 400)
 dev.off()
 ```
 
+#WAVELET FIGURE
+```{r}
+png("Fig_APH_Wavelet_Combo.png", width = 500, height = 300)
+wt.image(APH.w, color.key = "quantile", n.levels = 100, main = "Alexander Pond Wavelet",  
+         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), 
+         label.time.axis=TRUE,
+         show.date=TRUE,
+         label.period.axis=TRUE,
+         periodlab = "period (days)")
+dev.off()
+
+
+png("Fig_SPH_Wavelet_Combo.png", width = 500, height = 300)
+wt.image(SPH.w, color.key = "quantile", n.levels = 100, main = "Stender Pond Wavelet",  
+         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), 
+         label.time.axis=TRUE,
+         timelab = "Year",
+         show.date=TRUE,
+         label.period.axis=TRUE,
+         periodlab = "Period (Days)")
+dev.off()
+
+png("Fig_APHts_Combo.png", width = 500, height = 200)
+ggplot()+
+  geom_line(data = y_inter3_df, aes(x = date, y = temp), color = "#7c4b73")+
+  labs(x = "Year",
+       y = "Hourly Temperature (C)",
+       title = "Alexander Pond")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "none")+
+  scale_y_continuous("Hourly Temperature (C)", limits=c(0, 25)) 
+dev.off()
+
+
+png("Fig_SPHts_Combo.png", width = 500, height = 200)
+ggplot()+
+  geom_line(data = y_inter4_df, aes(x = date, y = temp), color = "#e78429")+
+  labs(x = "Year",
+       y = "Hourly Temperature (C)",
+       title = "Stender Pond")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = "none")+
+  scale_y_continuous("Hourly Temperature (C)", limits=c(0, 25)) 
+dev.off()
+
+
+
+```
