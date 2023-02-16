@@ -687,21 +687,22 @@ ggplot()+
 ##Option1
 ```{r}
 f3a <- ggplot()+
-    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = HC), color ="#ababab", size = 1) +
-    geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = UL), color ="#D3D3D3", size = 1) +
-  geom_line(data = daily_means_condensed, aes(x = day, y = HC), color = "#e78429", size = 1) +
-  geom_line(data = daily_means_condensed, aes(x = day, y = UL), color = "#88a0dc", size = 1) +
-  labs(title = "Upper Lawrence Pond and Horse Creek", x = "Date", y = "Temperature (C)")+
+  geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = SC), color ="#D3D3D3", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = SC), color = "#ed968c", size = 1) +
+  geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = May), color ="#ababab", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = May), color = "#88a0dc", size = 1) +
+  labs(title = "(a) May Pond and Seaid Creek", x = "Date", y = "Temperature (C)")+
   theme_classic()+
   theme(text=element_text(size=16),legend.position = "none")
+
 f3b <- ggplot()+
   geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
   geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
   labs(x = "Date",
        y = "Hourly Temperature (C)",
-       title = "May Pond and Seiad Creek, August 2020")+
+       title = "(b) May Pond and Seiad Creek, August 2020")+
   theme_classic()+
-  theme(text=element_text(size=16), legend.position = "bottom")+
+  theme(text=element_text(size=16), legend.position = c(.9,1))+
   scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
   scale_y_continuous("Hourly Temperature (C)") 
 
@@ -710,12 +711,12 @@ f3c <- ggplot()+
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(x = "Sites",
        y = "Air Temperature Effects") +
-  ggtitle("Air Temperature Effects") +
+  ggtitle("(c) Sensitivity to Air Temperature") +
   theme_classic()+
   theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
 
-png("Fig_Figure3Option1.png",width = 1000, height = 700)
-(f3a + f3b) / (f3c)
+png("Fig_Figure3Option1.png",width = 500, height = 800)
+(f3a) / (f3b) / (f3c)
 dev.off()
 ```
 
