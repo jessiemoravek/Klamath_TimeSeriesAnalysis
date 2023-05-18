@@ -1356,121 +1356,121 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
 #All the temps in a figure
 ```{r}
 #AP
-colorAP <- c("AP1" = "blue")
+colorAP <- c("AP1" = "#88a0dc")
 AP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = AP1, color = "AP1")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = AP1, color = "AP1"), size = 1) +
+  labs(title = "Alexander Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorAP, labels = c("AP1"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #SP
-colorSP <- c("SP1" = "blue", "SP2" = "red")
+colorSP <- c("SP1" = "#88a0dc", "SP2" = "#ed968c")
 SP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = SP1, color = "SP1")) +
-  geom_line(aes(x = day, y = SP2, color = "SP2"))+
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = SP1, color = "SP1"), size = 1) +
+  geom_line(aes(x = day, y = SP2, color = "SP2"), size = 1)+
+  labs(title = "Stender Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorSP, labels = c("SP1","SP2"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #Durazo
-colorD <- c("Durazo" = "blue")
+colorD <- c("Durazo" = "#88a0dc")
 D <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = Durazo, color = "Durazo")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = Durazo, color = "Durazo"), size = 1) +
+  labs(title = "Durazo Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorD, labels = c("SP1","SP2"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #Lower Seiad
-colorLS <- c("LS" = "blue")
+colorLS <- c("LS" = "#88a0dc")
 LS <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = LS, color = "LS")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = LS, color = "LS"), size = 1) +
+  labs(title = "Lower Seiad Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorLS, labels = c("LS"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #May
-colorMay <- c("May" = "blue")
+colorMay <- c("May" = "#88a0dc")
 May <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = May, color = "May")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = May, color = "May"), size = 1) +
+  labs(title = "May Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorMay, labels = c("May"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #FishGulch
-colorFG <- c("FG" = "blue")
+colorFG <- c("FG" = "#88a0dc")
 FG <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = FG3, color = "FG")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = FG3, color = "FG"), size = 1) +
+  labs(title = "Fish Gulch Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorFG, labels = c("FG"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #Goodman
-colorGP <- c("GP2" = "blue", "GP3" = "red")
+colorGP <- c("GP2" = "#88a0dc", "GP3" = "#ed968c")
 GP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = GP2, color = "GP2")) +
-  geom_line(aes(x = day, y = GP3, color = "GP3")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = GP2, color = "GP2"), size = 1) +
+  geom_line(aes(x = day, y = GP3, color = "GP3"), size = 1) +
+  labs(title = "Goodman Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorGP, labels = c("GP2","GP3"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #UpperLawrence
-colorUL <- c("ULout" = "blue", "UL3" = "red")
+colorUL <- c("ULout" = "#88a0dc", "UL3" = "#ed968c")
 UL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = ULout, color = "ULout")) +
-  geom_line(aes(x = day, y = UL3, color = "UL3")) +
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = ULout, color = "ULout"), size = 1) +
+  geom_line(aes(x = day, y = UL3, color = "UL3"), size = 1) +
+  labs(title = "Upper Lawrence Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorUL, labels = c("ULout","UL3"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #LL
-colorLL <- c("LL1" = "blue", "LL2" = "red", "LL3" = "green")
+colorLL <- c("LL1" = "#88a0dc", "LL2" = "#ed968c", "LL3" = "#f9d14a")
 LL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = LL1, color = "LL1")) +
-  geom_line(aes(x = day, y = LL2, color = "LL2"))+
-  geom_line(aes(x = day, y = LL3, color = "LL3"))+
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = LL1, color = "LL1"), size = 1) +
+  geom_line(aes(x = day, y = LL2, color = "LL2"), size = 1)+
+  geom_line(aes(x = day, y = LL3, color = "LL3"), size = 1)+
+  labs(title = "Lower Lawrence Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorLL, labels = c("LL1","LL2","LL3"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #SC
-colorSC <- c("LSck" = "blue", "MayCk"="red")
+colorSC <- c("LSck" = "#88a0dc", "MayCk"="#ed968c")
 SC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = LSck, color = "LSck"))+
-  geom_line(aes(x = day, y = MayCk, color = "MayCk"))+
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = LSck, color = "LSck"), size = 1)+
+  geom_line(aes(x = day, y = MayCk, color = "MayCk"), size = 1)+
+  labs(title = "Seiad Creek", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorSC, labels = c("LSck","MayCk"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 #HC
-colorHC <- c("FGck" = "blue", "ULck" = "red")
+colorHC <- c("FGck" = "#88a0dc", "ULck" = "#ed968c")
 HC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
-  geom_line(aes(x = day, y = FGck, color = "FGck")) +
-  geom_line(aes(x = day, y = ULck, color = "ULck"))+
-  labs(x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  geom_line(aes(x = day, y = FGck, color = "FGck"), size = 1) +
+  geom_line(aes(x = day, y = ULck, color = "ULck"), size = 1)+
+  labs(title = "Horse Creek", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
   scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
   theme_classic()+
   scale_color_manual(values = colorHC, labels = c("FGck","ULck"))+ 
-  theme(legend.position="none")
+  theme(text=element_text(size=16), legend.position="none")
 
 empty <- daily_means %>% rowid_to_column(var = "day") %>%
   ggplot()+

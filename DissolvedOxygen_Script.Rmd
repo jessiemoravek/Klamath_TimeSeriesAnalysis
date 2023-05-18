@@ -1,0 +1,286 @@
+---
+title: "DissolvedOxygen_Script"
+output: html_document
+date: "2023-05-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Data wrangling packages
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(patchwork)
+library(astsa)
+library(weathermetrics)
+```
+
+# DO Data: Cleaning datasets and aligning dates
+## Pre processing on Excel
+### Alexander SN 214, 15:40 on 10 July to 14:17 on 16 July
+#### Total Depth (m): 0.66			Sensor Depth (from btm, m): 0.58	
+```{r, include=FALSE}
+AP_DO <- read.csv("Sen214_DO.csv")
+AP_DO$date <- lubridate::mdy_hm(AP_DO$date_time)
+head(AP_DO, n = 50) 
+tail(AP_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startAP <- which(AP_DO$date == "2020-07-10 15:45:00 UTC", arr.ind = TRUE)
+endAP <- which(AP_DO$date == "2020-07-16 14:10:00 UTC", arr.ind = TRUE)
+
+AP_DO <- AP_DO[c(startAP:endAP),] 
+str(AP_DO) 
+AP_DO <- AP_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- AP_DO[!complete.cases(AP_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = AP_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Alexander Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+
+
+### Stender SN 217, 15:00 on 11 July to 14:43 on 16 July 
+#### Total Depth (m): 0.82			Sensor Depth (from btm, m): 0.5	
+```{r, include=FALSE}
+SP_DO <- read.csv("Sen217_DO.csv")
+SP_DO$date <- lubridate::mdy_hm(SP_DO$date_time)
+head(SP_DO, n = 50) 
+tail(SP_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startSP <- which(SP_DO$date == "2020-07-11 15:05:00 UTC", arr.ind = TRUE)
+endSP <- which(SP_DO$date == "2020-07-16 14:35:00 UTC", arr.ind = TRUE)
+
+SP_DO <- SP_DO[c(startSP:endSP),] 
+str(SP_DO) 
+SP_DO <- SP_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- SP_DO[!complete.cases(SP_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = SP_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Stender Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+### Durazo SN 212, 11:02 on 17 July to 12:20 on 23 July
+#### Total Depth (m): 0.75			Sensor Depth (from btm, m): 0.5	
+```{r, include=FALSE}
+Durazo_DO <- read.csv("Sen212_DO.csv")
+Durazo_DO$date <- lubridate::mdy_hm(Durazo_DO$date_time)
+head(Durazo_DO, n = 50) 
+tail(Durazo_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startDurazo <- which(Durazo_DO$date == "2020-07-17 11:10:00 UTC", arr.ind = TRUE)
+endDurazo <- which(Durazo_DO$date == "2020-07-23 12:15:00 UTC", arr.ind = TRUE)
+
+Durazo_DO <- Durazo_DO[c(startDurazo:endDurazo),] 
+str(Durazo_DO) 
+Durazo_DO <- Durazo_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- Durazo_DO[!complete.cases(Durazo_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = Durazo_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Durazo Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Lower Seiad SN 216, 11:32 on 17 July to 12:32 on 23 July 
+#### Total Depth (m): 1.86			Sensor Depth (from btm, m): 0.55	
+```{r, include=FALSE}
+LS_DO <- read.csv("Sen216_DO.csv")
+LS_DO$date <- lubridate::mdy_hm(LS_DO$date_time)
+head(LS_DO, n = 50) 
+tail(LS_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startLS <- which(LS_DO$date == "2020-07-17 11:40:00 UTC", arr.ind = TRUE)
+endLS <- which(LS_DO$date == "2020-07-23 12:25:00 UTC", arr.ind = TRUE)
+
+LS_DO <- LS_DO[c(startLS:endLS),] 
+str(LS_DO) 
+LS_DO <- LS_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- LS_DO[!complete.cases(LS_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = LS_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Lower Seiad Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### May SN 213, 11:50 on 17 July to 12:42 on 23 July 
+#### Total Depth (m): 1.1			Sensor Depth (from btm, m): 0.9	
+```{r, include=FALSE}
+May_DO <- read.csv("Sen213_DO.csv")
+May_DO$date <- lubridate::mdy_hm(May_DO$date_time)
+head(May_DO, n = 50) 
+tail(May_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startMay <- which(May_DO$date == "2020-07-17 11:55:00 UTC", arr.ind = TRUE)
+endMay <- which(May_DO$date == "2020-07-23 12:50:00 UTC", arr.ind = TRUE)
+
+May_DO <- May_DO[c(startMay:endMay),] 
+str(May_DO) 
+May_DO <- May_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- May_DO[!complete.cases(May_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = May_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "May Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### FishGulch SN 215, 12:46 on 10 July to 10:53 on 16 July
+#### Total Depth (m): 0.51			Sensor Depth (from btm, m): 0.45
+```{r, include=FALSE}
+FG_DO <- read.csv("Sen215_DO.csv")
+FG_DO$date <- lubridate::mdy_hm(FG_DO$date_time)
+head(FG_DO, n = 50) 
+tail(FG_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startFG <- which(FG_DO$date == "2020-07-10 12:50:00 UTC", arr.ind = TRUE)
+endFG <- which(FG_DO$date == "2020-07-16 10:45:00 UTC", arr.ind = TRUE)
+
+FG_DO <- FG_DO[c(startFG:endFG),] 
+str(FG_DO) 
+FG_DO <- FG_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- FG_DO[!complete.cases(FG_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = FG_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Fish Gulch Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+###Goodman SN 212, 10:47 on 9 July to 12:35 on 16 July
+#### Total Depth (m): 0.57			Sensor Depth (from btm, m): 0.40
+```{r, include=FALSE}
+GP_DO <- read.csv("Sen212_DO.csv")
+GP_DO$date <- lubridate::mdy_hm(GP_DO$date_time)
+head(GP_DO, n = 50) 
+tail(GP_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startGP <- which(GP_DO$date == "2020-07-09 10:55:00 UTC", arr.ind = TRUE)
+endGP <- which(GP_DO$date == "2020-07-16 12:40:00 UTC", arr.ind = TRUE)
+
+GP_DO <- GP_DO[c(startGP:endGP),] 
+str(GP_DO) 
+GP_DO <- GP_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- GP_DO[!complete.cases(GP_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = GP_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Goodman Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Upper Law SN 216, 15:24 on 7 July to 11:45 on 16 July
+#### Total Depth (m): 0.22			Sensor Depth (from btm, m): 0.15
+```{r, include=FALSE}
+UL_DO <- read.csv("Sen216_DO.csv")
+UL_DO$date <- lubridate::mdy_hm(UL_DO$date_time)
+head(UL_DO, n = 50) 
+tail(UL_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startUL <- which(UL_DO$date == "2020-07-07 15:30:00 UTC", arr.ind = TRUE)
+endUL <- which(UL_DO$date == "2020-07-16 11:40:00 UTC", arr.ind = TRUE)
+
+UL_DO <- UL_DO[c(startUL:endUL),] 
+str(UL_DO) 
+UL_DO <- UL_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- UL_DO[!complete.cases(UL_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = UL_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Upper Lawrence Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Lower Law SN 213, 15:45 on 9 July to 12:02 on 16 July 
+#### Total Depth (m): 0.33			Sensor Depth (from btm, m): 0.20	
+
+```{r, include=FALSE}
+LL_DO <- read.csv("Sen213_DO.csv")
+LL_DO$date <- lubridate::mdy_hm(LL_DO$date_time)
+head(LL_DO, n = 50) 
+tail(LL_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startLL <- which(LL_DO$date == "2020-07-09 15:50:00 UTC", arr.ind = TRUE)
+#cut off an hour on the back end
+endLL <- which(LL_DO$date == "2020-07-16 10:55:00 UTC", arr.ind = TRUE)
+
+LL_DO <- LL_DO[c(startLL:endLL),] 
+str(LL_DO) 
+LL_DO <- LL_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- LL_DO[!complete.cases(LL_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = LL_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Lower Lawrence Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
