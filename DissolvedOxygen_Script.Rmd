@@ -13,6 +13,7 @@ library(lubridate)
 library(patchwork)
 library(astsa)
 library(weathermetrics)
+library(MetBrewer)
 ```
 
 # DO Data: Cleaning datasets and aligning dates
@@ -59,7 +60,8 @@ tail(SP_DO, n = 100)
 
 #search for start date + 1 time step (5 min)
 startSP <- which(SP_DO$date == "2020-07-11 15:05:00 UTC", arr.ind = TRUE)
-endSP <- which(SP_DO$date == "2020-07-16 14:35:00 UTC", arr.ind = TRUE)
+#Chop hours off the end
+endSP <- which(SP_DO$date == "2020-07-16 06:35:00 UTC", arr.ind = TRUE)
 
 SP_DO <- SP_DO[c(startSP:endSP),] 
 str(SP_DO) 
@@ -88,7 +90,7 @@ tail(Durazo_DO, n = 100)
 
 #search for start date + 1 time step (5 min)
 startDurazo <- which(Durazo_DO$date == "2020-07-17 11:10:00 UTC", arr.ind = TRUE)
-endDurazo <- which(Durazo_DO$date == "2020-07-23 12:15:00 UTC", arr.ind = TRUE)
+endDurazo <- which(Durazo_DO$date == "2020-07-23 02:15:00 UTC", arr.ind = TRUE)
 
 Durazo_DO <- Durazo_DO[c(startDurazo:endDurazo),] 
 str(Durazo_DO) 
@@ -206,7 +208,8 @@ tail(GP_DO, n = 100)
 
 #search for start date + 1 time step (5 min)
 startGP <- which(GP_DO$date == "2020-07-09 10:55:00 UTC", arr.ind = TRUE)
-endGP <- which(GP_DO$date == "2020-07-16 12:40:00 UTC", arr.ind = TRUE)
+#Cut off a few hours on the backend
+endGP <- which(GP_DO$date == "2020-07-16 04:40:00 UTC", arr.ind = TRUE)
 
 GP_DO <- GP_DO[c(startGP:endGP),] 
 str(GP_DO) 
@@ -265,8 +268,8 @@ tail(LL_DO, n = 100)
 
 #search for start date + 1 time step (5 min)
 startLL <- which(LL_DO$date == "2020-07-09 15:50:00 UTC", arr.ind = TRUE)
-#cut off an hour on the back end
-endLL <- which(LL_DO$date == "2020-07-16 10:55:00 UTC", arr.ind = TRUE)
+#cut off a few hours on the back end
+endLL <- which(LL_DO$date == "2020-07-16 03:55:00 UTC", arr.ind = TRUE)
 
 LL_DO <- LL_DO[c(startLL:endLL),] 
 str(LL_DO) 
@@ -284,3 +287,45 @@ ggplot()+
   theme_classic()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
+
+#Combined graphs
+```{r}
+mycolors <- met.brewer(name="Archambault",n=5,type="discrete")
+
+colorSC <- c("Alexander" = "#88a0dc", "Stender" = "#7c4b73", 'Durazo' = "#ed968c", 'LowerSeiad' = "#e78429", 'May' = "#f9d14a")
+scdo <- ggplot()+
+  geom_line(data = AP_DO, aes(x = date, y = DO_mg.L, color ="Alexander"), size = 1) +
+  geom_line(data = SP_DO, aes(x = date, y = DO_mg.L, color ="Stender"), size = 1) +
+  geom_line(data = Durazo_DO, aes(x = date, y = DO_mg.L, color ="Durazo"), size = 1) +
+  geom_line(data = LS_DO, aes(x = date, y = DO_mg.L, color ="LowerSeiad"), size = 1) +
+  geom_line(data = May_DO, aes(x = date, y = DO_mg.L, color ="May"), size = 1) +
+  labs(title = "Seiad Creek Ponds DO", x = "Date", y = "Dissolved Oxygen (mg/L)", color = "Legend")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = 'right') + 
+  scale_colour_manual("", values = c("Alexander" = "#88a0dc", "Stender" = "#7c4b73", 'Durazo' = "#ed968c", 'LowerSeiad' = "#e78429", 'May' = "#f9d14a"))
+ 
+```
+```{r}
+
+colorHC <- c("FishGulch" = "#88a0dc", "Goodman" = "#ed968c", 'UpperLaw' = "#f9d14a", 'LowerLaw' = "#e78429")
+hcdo <- ggplot()+
+  geom_line(data = FG_DO, aes(x = date, y = DO_mg.L, color ="FishGulch"), size = 1) +
+  geom_line(data = GP_DO, aes(x = date, y = DO_mg.L, color ="Goodman"), size = 1) +
+  geom_line(data = UL_DO, aes(x = date, y = DO_mg.L, color ="UpperLaw"), size = 1) +
+  geom_line(data = LL_DO, aes(x = date, y = DO_mg.L, color ="LowerLaw"), size = 1) +
+  labs(title = "Horse Creek Ponds DO", x = "Date", y = "Dissolved Oxygen (mg/L)", color = "Legend")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = 'right') + 
+  scale_colour_manual("", values = c("FishGulch" = "#88a0dc", "Goodman" = "#ed968c", 'UpperLaw' = "#f9d14a", 'LowerLaw' = "#e78429"))
+ 
+```
+
+```{r}
+png("Fig_DO.png", width = 700, height = 600)
+(scdo / hcdo)
+dev.off()
+
+```
+
