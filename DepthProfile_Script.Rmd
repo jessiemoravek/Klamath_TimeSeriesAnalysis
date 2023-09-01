@@ -1,0 +1,412 @@
+---
+title: "DepthProfiles_Script"
+output: html_document
+date: "2023-09-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Data wrangling packages
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(patchwork)
+library(astsa)
+library(weathermetrics)
+library(MetBrewer)
+```
+
+
+```{r, include=FALSE}
+dp <- read.csv("DepthProfiles_All.csv")
+dp
+summary(dp$do_mgL)
+summary(dp$temp_c)
+```
+#Fish Gulch
+```{r, include=FALSE}
+dp_FG <- dp[dp$site %in% c("FishGulch"),]
+dp_FG_1 <- dp_FG[dp_FG$profile %in% 1,]
+dp_FG_2 <- dp_FG[dp_FG$profile %in% 2,]
+
+do_FG <- ggplot()+
+  geom_line(data = dp_FG_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_FG_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_FG <- ggplot()+
+  geom_line(data = dp_FG_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_FG_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+FG_plot <- (do_FG + temp_FG) + plot_annotation(title = "Fish Gulch", theme = theme(plot.title = element_text(size = 16)))
+FG_plot
+```
+
+#Goodman
+```{r, include=FALSE}
+dp_GP <- dp[dp$site %in% c("Goodman"),]
+
+do_GP <- ggplot()+
+  geom_line(data = dp_GP, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_GP <- ggplot()+
+  geom_line(data = dp_GP, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+GP_plot <- (do_GP + temp_GP) + plot_annotation(
+  title = "Goodman", theme = theme(plot.title = element_text(size = 16)))
+GP_plot
+```
+
+#Upper Lawrence 1
+```{r, include=FALSE}
+dp_UL1 <- dp[dp$site %in% c("UpperLawrence1"),]
+
+do_UL1 <- ggplot()+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_UL1 <- ggplot()+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+UL1_plot <-print((do_UL1 + temp_UL1) + plot_annotation(
+  title = "Upper Lawrence 1", theme = theme(plot.title = element_text(size = 16))))
+```
+#Upper Lawrence 2
+```{r, include=FALSE}
+dp_UL2 <- dp[dp$site %in% c("UpperLawrence2"),]
+
+do_UL2 <- ggplot()+
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_UL2 <- ggplot()+
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+UL2_plot <-(do_UL2 + temp_UL2) + plot_annotation(
+  title = "Upper Lawrence 2", theme = theme(plot.title = element_text(size = 16)))
+```
+#Upper Lawrence 3
+```{r, include=FALSE}
+dp_UL3 <- dp[dp$site %in% c("UpperLawrence3"),]
+dp_UL3_1 <- dp_UL3[dp_UL3$profile %in% 1,]
+dp_UL3_2 <- dp_UL3[dp_UL3$profile %in% 2,]
+
+do_UL3 <- ggplot()+
+  geom_line(data = dp_UL3_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_UL3_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_UL3 <- ggplot()+
+  geom_line(data = dp_UL3_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_UL3_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+UL3_plot <-(do_UL3 + temp_UL3) + plot_annotation(
+  title = "Upper Lawrence 3", theme = theme(plot.title = element_text(size = 16)))
+```
+
+#Lower Lawrence
+```{r, include=FALSE}
+dp_LL <- dp[dp$site %in% c("LowerLawrence"),]
+dp_LL_1 <- dp_LL[dp_LL$profile %in% 1,]
+dp_LL_2 <- dp_LL[dp_LL$profile %in% 2,]
+
+do_LL <- ggplot()+
+  geom_line(data = dp_LL_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_LL_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_LL <- ggplot()+
+  geom_line(data = dp_LL_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_LL_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+LL_plot <-(do_LL + temp_LL) + plot_annotation(
+  title = "Lower Lawrence", theme = theme(plot.title = element_text(size = 16)))
+```
+
+
+
+
+#Alexander
+```{r, include=FALSE}
+dp_AP <- dp[dp$site %in% c("Alexander"),]
+dp_AP_1 <- dp_AP[dp_AP$profile %in% 1,]
+dp_AP_2 <- dp_AP[dp_AP$profile %in% 2,]
+
+do_AP <- ggplot()+
+  geom_line(data = dp_AP_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_AP_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_AP <- ggplot()+
+  geom_line(data = dp_AP_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_AP_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+AP_plot <-(do_AP + temp_AP) + plot_annotation(
+  title = "Alexander", theme = theme(plot.title = element_text(size = 16)))
+```
+
+#Stender
+```{r, include=FALSE}
+dp_SP <- dp[dp$site %in% c("Stender"),]
+dp_SP_1 <- dp_SP[dp_SP$profile %in% 1,]
+dp_SP_2 <- dp_SP[dp_SP$profile %in% 2,]
+
+do_SP <- ggplot()+
+  geom_line(data = dp_SP_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_SP_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_SP <- ggplot()+
+  geom_line(data = dp_SP_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_SP_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+SP_plot <-(do_SP + temp_SP) + plot_annotation(
+  title = "Stender", theme = theme(plot.title = element_text(size = 16)))
+```
+#Durazo
+```{r, include=FALSE}
+dp_DP <- dp[dp$site %in% c("Durazo"),]
+dp_DP_1 <- dp_DP[dp_DP$profile %in% 1,]
+dp_DP_2 <- dp_DP[dp_DP$profile %in% 2,]
+
+do_DP <- ggplot()+
+  geom_line(data = dp_DP_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_DP_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_DP <- ggplot()+
+  geom_line(data = dp_DP_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_DP_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+DP_plot <-(do_DP + temp_DP) + plot_annotation(
+  title = "Durazo", theme = theme(plot.title = element_text(size = 16)))
+```
+#May
+```{r, include=FALSE}
+dp_MP <- dp[dp$site %in% c("May"),]
+dp_MP_1 <- dp_MP[dp_MP$profile %in% 1,]
+dp_MP_2 <- dp_MP[dp_MP$profile %in% 2,]
+
+do_MP <- ggplot()+
+  geom_line(data = dp_MP_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_MP_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_MP <- ggplot()+
+  geom_line(data = dp_MP_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_MP_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+MP_plot <-(do_MP + temp_MP) + plot_annotation(
+  title = "May", theme = theme(plot.title = element_text(size = 16)))
+```
+
+#Lower Seiad
+```{r, include=FALSE}
+dp_LS <- dp[dp$site %in% c("LowerSeiad"),]
+dp_LS_1 <- dp_LS[dp_LS$profile %in% 1,]
+dp_LS_2 <- dp_LS[dp_LS$profile %in% 2,]
+
+do_LS <- ggplot()+
+  geom_line(data = dp_LS_1, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  geom_line(data = dp_LS_2, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip(ylim = c(0,11.5))+
+  theme_classic()
+
+temp_LS <- ggplot()+
+  geom_line(data = dp_LS_1, aes(x = depth_cm, y = temp_c),color ="#88a0dc", size = 1)+
+  geom_line(data = dp_LS_2, aes(x = depth_cm, y = temp_c),color ="#7c4b73", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+LS_plot <-(do_LS + temp_LS) + plot_annotation(
+  title = "Lower Seiad", theme = theme(plot.title = element_text(size = 16)))
+```
+
+#Combining Plots
+```{r}
+png("Fig_FGProfile.png", width = 400, height = 400)
+FG_plot
+dev.off()
+
+png("Fig_GPProfile.png", width = 400, height = 400)
+GP_plot
+dev.off()
+
+png("Fig_UL1Profile.png", width = 400, height = 400)
+UL1_plot
+dev.off()
+png("Fig_UL2Profile.png", width = 400, height = 400)
+UL2_plot
+dev.off()
+png("Fig_UL3Profile.png", width = 400, height = 400)
+UL3_plot
+dev.off()
+
+png("Fig_LLProfile.png", width = 400, height = 400)
+LL_plot
+dev.off()
+
+png("Fig_APProfile.png", width = 400, height = 400)
+AP_plot
+dev.off()
+
+png("Fig_SPProfile.png", width = 400, height = 400)
+SP_plot
+dev.off()
+
+png("Fig_DPProfile.png", width = 400, height = 400)
+DP_plot
+dev.off()
+
+png("Fig_MPProfile.png", width = 400, height = 400)
+MP_plot
+dev.off()
+
+png("Fig_LSProfile.png", width = 400, height = 400)
+LS_plot
+dev.off()
+
+
+```
+
