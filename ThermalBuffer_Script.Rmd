@@ -69,6 +69,19 @@ data_summer <- daily_max_long %>%filter(day>'2020-07-15'& day < '2020-09-15')
 #Make a column for habitat
 data_summer['habitat'] <- NA
 data_summer$habitat <- with(data_summer, ifelse(site == "SC" | site == "HC",as.character("creek"), as.character("pond")))
+
+#Calculate average daily maxs
+SC_max <- data_summer[data_summer$site %in% "SC",]
+mean(SC_max$value,na.rm=T)
+
+HC_max <- data_summer[data_summer$site %in% "HC",]
+mean(HC_max$value,na.rm=T)
+
+SCponds_max <- data_summer[data_summer$site %in% c("AP","SP","Durazo","May","LS"),]
+mean(SCponds_max$value,na.rm=T)
+
+HCponds_max <- data_summer[data_summer$site %in% c("FG","GP","UL","LL"),]
+mean(HCponds_max$value,na.rm=T)
 ```
 
 ###Seiad Creek 

@@ -1353,22 +1353,23 @@ daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = color, labels = c("FGck","ULck", "HC"))
 ```
+
+
 #Corr, Mean, and SD between multiple TS in a pond
-##Seiad Creek Ponds
 ```{r}
 #SP 
 #Check correlation between SP1 and SP2
-corSP <- cor(daily_means$SP1, daily_means$SP2, use = "na.or.complete", method = "pearson")
+corSP <- cor.test(daily_means$SP1, daily_means$SP2, use = "na.or.complete", method = "pearson")
 #Tightly correlated-- 0.9987
 
 #Check differences
 diffSP <- daily_means$SP1 - daily_means$SP2
-meanSP <- mean(diffSP,na.rm=T)
-sdSP <- sd(diffSP,na.rm=T)
+meanSP <- mean(diffSP,na.rm=T) #0.2552828
+sdSP <- sd(diffSP,na.rm=T) #0.286226
 
 #GP 
 #Check correlation between SP1 and SP2
-cor(daily_means$GP2, daily_means$GP3, use = "na.or.complete", method = "pearson")
+cor.test(daily_means$GP2, daily_means$GP3, use = "na.or.complete", method = "pearson")
 #Tightly correlated-- 0.979
 
 #Check differences
@@ -1379,7 +1380,7 @@ sdGP <- sd(diffGP,na.rm=T) #0.7083215
 
 #UL 
 #Check correlation between SP1 and SP2
-cor(daily_means$ULout, daily_means$UL3, use = "na.or.complete", method = "pearson")
+cor.test(daily_means$ULout, daily_means$UL3, use = "na.or.complete", method = "pearson")
 diffUL <-daily_means$ULout- daily_means$UL3
 mean(diffUL,na.rm=T) 
 sd(diffUL,na.rm=T) 
@@ -1390,7 +1391,7 @@ sd(diffUL,na.rm=T)
 
 #LL
 #Ahh there's three what to do
-cor(daily_means$LL1, daily_means$LL2, use = "na.or.complete", method = "pearson")
+cor.test(daily_means$LL1, daily_means$LL2, use = "na.or.complete", method = "pearson")
 diffLL <-daily_means$LL1- daily_means$LL2
 mean(diffLL,na.rm=T) 
 sd(diffLL,na.rm=T) 
@@ -1399,19 +1400,38 @@ sd(diffLL,na.rm=T)
 #mean = 0.006177339
 #sd = 0.6465672
 
+cor.test(daily_means$LL1, daily_means$LL3, use = "na.or.complete", method = "pearson")
+diffLL <-daily_means$LL1- daily_means$LL3
+mean(diffLL,na.rm=T) 
+sd(diffLL,na.rm=T) 
+
+#r = 0.9807396   
+#mean = -0.3401413
+#sd = 0.7437103
+
+cor.test(daily_means$LL2, daily_means$LL3, use = "na.or.complete", method = "pearson")
+diffLL <-daily_means$LL2- daily_means$LL3
+mean(diffLL,na.rm=T) 
+sd(diffLL,na.rm=T) 
+
+#r = 0.9974816  
+#mean = -0.3463187
+#sd = 0.2118427
+
+
 #SC
-cor(daily_means$LSck, daily_means$MayCk, use = "na.or.complete", method = "pearson")
+cor.test(daily_means$LSck, daily_means$MayCk, use = "na.or.complete", method = "pearson")
 diffSC <-daily_means$LSck- daily_means$MayCk
 mean(diffSC,na.rm=T) 
 sd(diffSC,na.rm=T) 
 
 #r = 0.9985793
-#mean = 0.1046814
+#mean =  0.1046814
 #sd = 0.2593251
 
 
 #HC
-cor(daily_means$FGck, daily_means$ULck, use = "na.or.complete", method = "pearson")
+cor.test(daily_means$FGck, daily_means$ULck, use = "na.or.complete", method = "pearson")
 diffHC <-daily_means$FGck- daily_means$ULck
 mean(diffHC,na.rm=T) 
 sd(diffHC,na.rm=T) 
@@ -1447,7 +1467,7 @@ SP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = colorSP, labels = c("SP1","SP2"))+ 
   theme(text=element_text(size=16), legend.position="none")+
-  geom_text(x=200, y=20, label="r = 0.999 \nmean difference = 0.255 \nsd diffence = 0.286")
+  geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
 
 
 #Durazo
@@ -1500,7 +1520,7 @@ GP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = colorGP, labels = c("GP2","GP3"))+ 
   theme(text=element_text(size=16), legend.position="none")+
-  geom_text(x=200, y=20, label="r = 0.979 \nmean difference = 0.134 \nsd diffence = 0.708")
+  geom_text(x=200, y=20, label="r = 0.979, p < 0.001", size = 5)
 
 
 #UpperLawrence
@@ -1513,7 +1533,7 @@ UL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = colorUL, labels = c("ULout","UL3"))+ 
   theme(text=element_text(size=16), legend.position="none")+
-  geom_text(x=200, y=20, label="r = 0.991 \nmean difference = 0.812 \nsd diffence = 0.655")
+  geom_text(x=200, y=20, label="r = 0.991, p < 0.001", size = 5)
 
 #LL
 colorLL <- c("LL1" = "#88a0dc", "LL2" = "#ed968c", "LL3" = "#f9d14a")
@@ -1526,7 +1546,7 @@ LL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = colorLL, labels = c("LL1","LL2","LL3"))+ 
   theme(text=element_text(size=16), legend.position="none")+
-  geom_text(x=200, y=20, label="r = 0.988 \nmean difference = 0.006 \nsd diffence = 0.647")
+  geom_text(x=200, y=20, label="r = 0.988 p < 0.001 \nr = 0.981, p < 0.001\n r = 0.997, p < 0.001", size = 5)
 
 #SC
 colorSC <- c("LSck" = "#88a0dc", "MayCk"="#ed968c")
@@ -1538,7 +1558,7 @@ SC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = colorSC, labels = c("LSck","MayCk"))+ 
   theme(text=element_text(size=16), legend.position="none")+
-  geom_text(x=200, y=20, label="r = 0.999 \nmean difference = 0.105 \nsd diffence = 0.259")
+  geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
 
 
 #HC
@@ -1551,7 +1571,7 @@ HC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme_classic()+
   scale_color_manual(values = colorHC, labels = c("FGck","ULck"))+ 
   theme(text=element_text(size=16), legend.position="none")+
-  geom_text(x=200, y=20, label="r = 0.999 \nmean difference = 0.644 \nsd diffence = 0.367")
+  geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
 
 empty <- daily_means %>% rowid_to_column(var = "day") %>%
   ggplot()+
