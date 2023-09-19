@@ -151,8 +151,12 @@ print(groups)
 ####Boxplot
 ```{r}
 #Boxplot
-b1 <- ggplot(subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC")))+
-  geom_boxplot(aes(x = site, value, col = day))+
+scs <- subset(data_summer, site == "SC")
+seiad_summer <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
+
+b1 <- ggplot()+
+  geom_boxplot(data = seiad_summer, aes(x = site, value, col = day), color = "#88a0dc")+
+  geom_boxplot(data = scs, aes(x = site, value, col = day), color = "#ed968c")+
   labs(title = "(a) Seiad, 15 July - 15 September")+
   theme_classic()+
   theme(text=element_text(size=16), axis.title.x=element_blank())+
@@ -236,8 +240,12 @@ print(groups)
 ####Boxplot
 ```{r}
 #Boxplot
-b2 <- ggplot(subset(data_summer, site %in% c("FG","UL","LL","GP","HC")))+
-  geom_boxplot(aes(x = site, value, col = day))+
+hcs <- subset(data_summer, site == "HC")
+horse_summer <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
+
+b2 <- ggplot()+
+  geom_boxplot(data = horse_summer, aes(x = site, value, col = day), color = "#88a0dc")+
+  geom_boxplot(data = hcs, aes(x = site, value, col = day), color = "#ed968c")+
   labs(title = "(b) Horse, 15 July - 15 September")+
   theme_classic()+
   theme(text=element_text(size=16), axis.title.x=element_blank())+
@@ -342,8 +350,13 @@ print(groups)
 ####Boxplot
 ```{r}
 #Boxplot
-b3 <- ggplot(subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC")))+
-  geom_boxplot(aes(x = site, value, col = day))+
+scw <- subset(data_winter, site == "SC")
+seiad_winter <- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
+
+
+b3 <- ggplot()+
+  geom_boxplot(data = seiad_winter, aes(x = site, value, col = day), color = "#88a0dc")+
+ geom_boxplot(data = scw, aes(x = site, value, col = day), color = "#ed968c")+
   labs(title = "(c) Seiad, 15 December - 15 February")+
   theme_classic()+
   theme(text=element_text(size=16))+
@@ -427,8 +440,12 @@ print(groups)
 ####Boxplot
 ```{r}
 #Boxplot
-b4 <- ggplot(subset(data_winter, site %in% c("FG","UL","LL","GP","HC")))+
-  geom_boxplot(aes(x = site, value, col = day))+
+hcw <- subset(data_winter, site == "HC")
+horse_winter <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
+  
+b4 <- ggplot()+
+  geom_boxplot(data = horse_winter, aes(x = site, value, col = day), color = "#88a0dc")+
+  geom_boxplot(data = hcw, aes(x = site, value, col = day), color = "#ed968c")+
   labs(title = "(d) Horse, 15 December - 15 February")+
   theme_classic()+
   theme(text=element_text(size=16))+
@@ -684,15 +701,26 @@ mod1_df_clip$name <- c("Alexander","Stender","Durazo","LowerSeiad","May","FishGu
 
 mod1_df_clip$name <- factor(mod1_df_clip$name, levels = c("Alexander","Stender","Durazo","LowerSeiad","May","SeiadCreek","FishGulch","Goodman","UpperLaw","LowerLaw","HorseCreek","KlamathRiver"))
 
+sc <- subset(mod1_df_clip, name == "SeiadCreek")
+hc <- subset(mod1_df_clip, name == "HorseCreek")
+kr <- subset(mod1_df_clip, name == "KlamathRiver")
+
 
 ggplot()+
-  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Ponds")) +
+  geom_pointrange(data = sc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
+  geom_pointrange(data = hc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
+  geom_pointrange(data = kr, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "River")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(x = "Sites",
        y = "Air Temperature Effects") +
   ggtitle("Air Temperature Effects") +
   theme_classic()+
-  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1), legend.position =c(.15,.9))+
+  scale_colour_manual("", values = c("Ponds"="#88a0dc", "Creeks"="#ed968c", "River" = "#ab3329"))+
+  scale_y_continuous("Air Temperature Effects")
+  
+
 ```
 
 
@@ -720,13 +748,18 @@ f3b <- ggplot()+
   scale_y_continuous("Hourly Temperature (C)") 
 
 f3c <- ggplot()+
-  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up), color = "black") +
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Ponds")) +
+  geom_pointrange(data = sc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
+  geom_pointrange(data = hc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
+  geom_pointrange(data = kr, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "River")) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(x = "Sites",
        y = "Air Temperature Effects") +
-  ggtitle("(c) Sensitivity to Air Temperature") +
+  ggtitle("Air Temperature Effects") +
   theme_classic()+
-  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1))
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1), legend.position =c(.15,.9))+
+  scale_colour_manual("", values = c("Ponds"="#88a0dc", "Creeks"="#ed968c", "River" = "#ab3329"))+
+  scale_y_continuous("Air Temperature Effects")
 
 png("Fig_Figure3Option1.png",width = 500, height = 800)
 (f3a) / (f3b) / (f3c)
