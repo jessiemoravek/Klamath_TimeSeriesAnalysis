@@ -279,6 +279,7 @@ missing_data
 ##Wavelet
 ```{r}
 #run the wavelet
+?analyze.wavelet
 SPH.w <- analyze.wavelet(y_inter2_df, "temp",
                         loess.span = 0,
                         dt = 1/24, 

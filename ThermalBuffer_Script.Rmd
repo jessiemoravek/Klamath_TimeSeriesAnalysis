@@ -729,12 +729,13 @@ ggplot()+
 ```{r}
 f3a <- ggplot()+
   geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = SC), color ="#D3D3D3", size = 1) +
-  geom_line(data = daily_means_condensed, aes(x = day, y = SC), color = "#ed968c", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = SC, color = "Seiad Creek"), size = 1) +
   geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = May), color ="#ababab", size = 1) +
-  geom_line(data = daily_means_condensed, aes(x = day, y = May), color = "#88a0dc", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = May, color = "May Pond"), size = 1) +
   labs(title = "(a) May Pond and Seaid Creek", x = "Date", y = "Temperature (C)")+
   theme_classic()+
-  theme(text=element_text(size=16),legend.position = "none")
+  theme(text=element_text(size=16),legend.position = c(.6,.8))+
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) 
 
 f3b <- ggplot()+
   geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
@@ -755,7 +756,7 @@ f3c <- ggplot()+
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(x = "Sites",
        y = "Air Temperature Effects") +
-  ggtitle("Air Temperature Effects") +
+  ggtitle("(c) Air Temperature Effects") +
   theme_classic()+
   theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1), legend.position =c(.15,.9))+
   scale_colour_manual("", values = c("Ponds"="#88a0dc", "Creeks"="#ed968c", "River" = "#ab3329"))+
