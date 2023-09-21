@@ -247,7 +247,15 @@ UL_DO <- UL_DO %>%
   summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
 missing_data <- UL_DO[!complete.cases(UL_DO),] 
 missing_data
+
+#UL_DO[UL_DO$date > 523| UL_DO$date > 530),] <- NA
+
+#UL_DO[(UL_DO$date < '2020-07-09 18:00:00'| UL_DO$date > '2020-07-09 18:35:00'),] <- NA
+
+#UL_DO <- UL_DO%>%filter(date<'2020-07-09 18:00:00' | UL_DO$date> '2020-07-09 18:35:00')
 ```
+
+
 ```{r}
 ggplot()+
   geom_line(data = UL_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +

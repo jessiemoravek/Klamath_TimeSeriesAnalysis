@@ -32,8 +32,8 @@ dp_FG_1 <- dp_FG[dp_FG$profile %in% 1,]
 dp_FG_2 <- dp_FG[dp_FG$profile %in% 2,]
 
 do_FG <- ggplot()+
-  geom_line(data = dp_FG_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_FG_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_FG_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_FG_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -63,7 +63,7 @@ FG_plot
 dp_GP <- dp[dp$site %in% c("Goodman"),]
 
 do_GP <- ggplot()+
-  geom_line(data = dp_GP, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
+  geom_line(data = dp_GP, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -104,7 +104,7 @@ do_UL1 <- ggplot()+
   theme_classic()
 
 temp_UL1 <- ggplot()+
-  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#e78429", size = 1)+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#f9d14a", size = 1)+
   labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -121,7 +121,7 @@ UL1_plot <-print((do_UL1 + temp_UL1) + plot_annotation(
 dp_UL2 <- dp[dp$site %in% c("UpperLawrence2"),]
 
 do_UL2 <- ggplot()+
-  geom_line(data = dp_UL2, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -151,8 +151,8 @@ dp_UL3_1 <- dp_UL3[dp_UL3$profile %in% 1,]
 dp_UL3_2 <- dp_UL3[dp_UL3$profile %in% 2,]
 
 do_UL3 <- ggplot()+
-  geom_line(data = dp_UL3_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_UL3_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_UL3_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_UL3_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   geom_line(data = dp_UL1, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
   geom_line(data = dp_UL2, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
@@ -167,8 +167,8 @@ do_UL3 <- ggplot()+
 temp_UL3 <- ggplot()+
   geom_line(data = dp_UL3_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
   geom_line(data = dp_UL3_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
-  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#cfa106", size = 1)+
-  geom_line(data = dp_UL2, aes(x = depth_cm, y = temp_c),color ="#db6002", size = 1)+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#f9d14a", size = 1)+
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = temp_c),color ="#e78429", size = 1)+
   labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -177,7 +177,7 @@ temp_UL3 <- ggplot()+
   coord_flip()+
   theme_classic()
 UL3_plot <-(do_UL3 + temp_UL3) + plot_annotation(
-  title = "Upper Lawrence 3", theme = theme(plot.title = element_text(size = 16)))
+  title = "Upper Lawrence", theme = theme(plot.title = element_text(size = 16)))
 ```
 
 #Lower Lawrence
@@ -187,8 +187,8 @@ dp_LL_1 <- dp_LL[dp_LL$profile %in% 1,]
 dp_LL_2 <- dp_LL[dp_LL$profile %in% 2,]
 
 do_LL <- ggplot()+
-  geom_line(data = dp_LL_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_LL_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_LL_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_LL_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -223,8 +223,8 @@ dp_AP_1 <- dp_AP[dp_AP$profile %in% 1,]
 dp_AP_2 <- dp_AP[dp_AP$profile %in% 2,]
 
 do_AP <- ggplot()+
-  geom_line(data = dp_AP_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_AP_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_AP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_AP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -256,8 +256,8 @@ dp_SP_1 <- dp_SP[dp_SP$profile %in% 1,]
 dp_SP_2 <- dp_SP[dp_SP$profile %in% 2,]
 
 do_SP <- ggplot()+
-  geom_line(data = dp_SP_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_SP_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_SP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_SP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -288,8 +288,8 @@ dp_DP_1 <- dp_DP[dp_DP$profile %in% 1,]
 dp_DP_2 <- dp_DP[dp_DP$profile %in% 2,]
 
 do_DP <- ggplot()+
-  geom_line(data = dp_DP_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_DP_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_DP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_DP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -320,8 +320,8 @@ dp_MP_1 <- dp_MP[dp_MP$profile %in% 1,]
 dp_MP_2 <- dp_MP[dp_MP$profile %in% 2,]
 
 do_MP <- ggplot()+
-  geom_line(data = dp_MP_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_MP_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_MP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_MP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
@@ -353,8 +353,8 @@ dp_LS_1 <- dp_LS[dp_LS$profile %in% 1,]
 dp_LS_2 <- dp_LS[dp_LS$profile %in% 2,]
 
 do_LS <- ggplot()+
-  geom_line(data = dp_LS_1, aes(x = depth_cm, y = do_mgL),color ="#ed968c", size = 1) +
-  geom_line(data = dp_LS_2, aes(x = depth_cm, y = do_mgL),color ="#88a0dc", size = 1) +
+  geom_line(data = dp_LS_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_LS_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
   labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
   #reverse depth so it starts at zero
   scale_x_reverse()+
