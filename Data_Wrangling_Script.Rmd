@@ -1377,6 +1377,15 @@ diffGP <- daily_means$GP3 - daily_means$GP2
 meanGP <- mean(diffGP,na.rm=T) #0.1340852
 sdGP <- sd(diffGP,na.rm=T) #0.7083215
 
+#Check correlation between SP1 and SP2
+cor.test(daily_means$GP1, daily_means$GP2, use = "na.or.complete", method = "pearson")
+# correlated-- 0.9850231  
+
+#Check differences
+diffGPa <- daily_means$GP2 - daily_means$GP1
+meanGPa <- mean(diffGPa,na.rm=T) #-0.577712
+sdGPa <- sd(diffGP,na.rm=T) #1.249114
+
 
 #UL 
 #Check correlation between SP1 and SP2
