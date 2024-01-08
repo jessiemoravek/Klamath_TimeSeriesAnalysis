@@ -732,7 +732,7 @@ f3a <- ggplot()+
   geom_line(data = daily_means_condensed, aes(x = day, y = SC, color = "Seiad Creek"), size = 1) +
   geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = May), color ="#ababab", size = 1) +
   geom_line(data = daily_means_condensed, aes(x = day, y = May, color = "May Pond"), size = 1) +
-  labs(title = "(a) May Pond and Seaid Creek", x = "Date", y = "Temperature (C)")+
+  labs(title = "(a) May Pond and Seiad Creek", x = "Date", y = "Temperature (deg C)")+
   theme_classic()+
   theme(text=element_text(size=16),legend.position = c(.6,.8))+
   scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) 
@@ -741,12 +741,12 @@ f3b <- ggplot()+
   geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
   geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
   labs(x = "Date",
-       y = "Hourly Temperature (C)",
+       y = "Hourly Temperature (deg C)",
        title = "(b) May Pond and Seiad Creek, August 2020")+
   theme_classic()+
   theme(text=element_text(size=16), legend.position = c(.9,1))+
   scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
-  scale_y_continuous("Hourly Temperature (C)") 
+  scale_y_continuous("Hourly Temperature (deg C)") 
 
 f3c <- ggplot()+
   geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Ponds")) +
@@ -760,7 +760,7 @@ f3c <- ggplot()+
   theme_classic()+
   theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1), legend.position =c(.15,.9))+
   scale_colour_manual("", values = c("Ponds"="#88a0dc", "Creeks"="#ed968c", "River" = "#ab3329"))+
-  scale_y_continuous("Air Temperature Effects")
+  scale_y_continuous("Air temperature effects \n (ΔC_water/ΔC_air)")
 
 png("Fig_Figure3Option1.png",width = 500, height = 800)
 (f3a) / (f3b) / (f3c)
