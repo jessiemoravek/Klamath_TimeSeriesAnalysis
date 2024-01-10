@@ -1,0 +1,2268 @@
+---
+title: "MoravekEtAl_DryadUpload"
+output: html_document
+date: "2024-01-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Data wrangling packages
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(patchwork)
+library(astsa)
+library(weathermetrics)
+library(report)
+library(car)
+library(multcomp)
+library(MetBrewer)
+library(multcompView)
+library(xtable)
+library(forcats)
+
+# Time series analysis packages
+library(MARSS)
+library(MASS)
+library(forecast)
+library(zoo)
+library(imputeTS)
+library(WaveletComp)
+
+```
+
+#Questions for Albert
+##Did not include code for interpolating Klamath River temps at Seiad
+##Can I include separate files for all the DO probes? Annoying and hard to combine them all. 
+##Should I include the time lag testing in the MAR model code? 
+##Can I use a separate dataset that I pulled specially for the May pond exampels? 
+##Note: Wavelet figures used in final manuscript are produced without z-scored data to make the figure more interpretable. Which code should I include in this code here?
+##FUnding sources smh
+
+
+#DATASETS
+```{r}
+#POND TEMPERATURE DATA
+##Pond and creek temperature data were obtained via a series of 21 temperature sensors (HOBO MX2201) placed in  9 ponds and 2 creeks from July 2020-July 2021. Water temperature was measured every 15 minutes. 
+##Klamath River temperature data was collected by the Karuk Tribe and accessed with permission from the Karuk Tribe Water Quality Department (Accessed 27 September 2022). We used data between May 2020 and February 2021. We used a combination of data readings from the Seiad Valley station as well as interpolated data using a linear regression from the Orleans station when Seiad Valley data was unavailable (5.5% of Seiad Valley data was interpolated). Water temperature was measured every hour.  
+
+quarterHour_condensed <- readRDS("quarterHour_condensed.rds") #Matrix of 15 min temps
+daily_means_condensed <- readRDS("daily_means_condensed.rds") #Matrix of mean daily water temperatures for 9 ponds, 2 creeks, and mainstem Klamath from 1 July 2020 to 13 July 2021. "Condensed" means that all invalid sensors are removed from the dataset.
+daily_maxs_condensed <- readRDS("daily_maxs_condensed.rds") #Matrix of daily maximum temps
+daily_mins_condensed <- readRDS("daily_mins_condensed.rds") #Matrix of daily minimum temps
+
+
+#AIR TEMPERATURE DATA
+##Both air temperature datasets were downloaded from the National Oceanic and Atmospheric Administration’s Climate Data Online database for the Slater Butte air sensor in Siskiyou County, CA.
+
+covariate <- readRDS("covariate.rds") #Matrix of mean daily air temperatures from 1 July 2020 to 13 July 2021
+airtemp_lag <- read.csv("SlaterButteAirTemp_2020_2021_lag.csv") #Same air temperature dataset as above, but lagged by several days to test most appropriate time lag for MAR models  
+
+
+#HISTORICAL POND TEMPERATURE DATA
+##Historical temperature data from Alexander and Stender Ponds was provided by the Mid Klamath Watershed Council (MKWC). Temperature data were collected hourly in these ponds from 2010-2021 using HOBO U22 sensors. 
+
+APH <- read.csv("Alexander_Historical_2.csv") #Historical data from Alexander Pond
+SPH <- read.csv("Stender_Historical_2.csv") #Historical data from Stender Pond 
+
+
+#DISSOLVED OXYGEN DATA
+##DO was measured using HOBO DO probes for several days in each pond in July 2020. 
+##DO and temperature depth profiles were taken using a YSI DO200M in June 2023.
+
+dp <- read.csv("DepthProfiles_All.csv") #Temperature and Dissolved Oxygen depth profiles taken in June 2023
+
+
+
+#MISCELLANEOUS DATA 
+##Miscellaneous data pulled into separate datasets for easier figure creation
+
+daily_means <- readRDS("daily_means.RDS") #Same as daily_means_condensed but in dataset format. This data set is not "condensed" meaning it still includes sensors that were ultimately removed from analysis. 
+mod1_params <- readRDS("mod1_params.RDS") #Parameters from the best supported MAR model, used to make Figure 3c (air temperature effects)
+May <- readRDS("May.rds") #Pulled May Pond data to make Figure 3a and 3b (May Pond example)
+MayCk <- readRDS("MayCk.rds") #Pulled May Creek data to make Figure 3a and 3b (May Pond example)
+
+```
+
+#FIGURE 2 & TABLE 2: MAR MODEL 
+## Transform matrices (z-score)
+```{r}
+z_daily_means_condensed <- zscore(daily_means_condensed)
+z_covariate <- zscore(covariate)
+```
+
+## Hypothesis 1: all states have different levels of stochastic (Q) and deterministic (C) variability 
+```{r}
+# convention: name modhypothesis
+mod1 = list()
+mod1$A = "zero" 
+mod1$Z = "identity"
+mod1$R = "zero" 
+mod1$Q = "diagonal and unequal" 
+mod1$B = "diagonal and unequal" 
+mod1$U = "zero"  
+mod1$C = "unequal" 
+mod1$c = z_covariate
+mod1.fit = MARSS(z_daily_means_condensed, model=mod1)
+mod1_params =MARSSparamCIs(mod1.fit)
+MARSSparamCIs(mod1.fit)
+saveRDS(mod1_params,"mod1_params.RDS")
+```
+
+```{r}
+# plot residuals
+par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
+  for (j in 1:5) {
+    plot.ts(residuals<-MARSSresiduals(mod1.fit, type = "tt1")$model.residuals[j, ],
+            ylab = "Residual")
+    abline(h = 0, lty = "dashed")
+    acf(residuals,na.action = na.pass)
+  }
+```
+
+###Test covariate time lags
+####Pull in slightly lagged air temp dataset
+```{r}
+airtemp_lag <- read.csv("SlaterButteAirTemp_2020_2021_lag.csv")
+
+#Convert Fahrenheit to Celsius
+airtemp_lag$TAVG <- fahrenheit.to.celsius(airtemp_lag$TAVG)
+airtemp_lag$TMAX <- fahrenheit.to.celsius(airtemp_lag$TMAX)
+airtemp_lag$TMIN <- fahrenheit.to.celsius(airtemp_lag$TMIN)
+
+#Convert dates to appropriate format
+airtemp_lag$date <- lubridate::mdy(airtemp_lag$DATE)
+missing_data <- airtemp_lag[!complete.cases(airtemp_lag),] #No missing data
+missing_data
+airtemp_lag$day <- lubridate::floor_date(airtemp_lag$date, unit="day")
+covariate_lag <- (t(airtemp_lag$TAVG))
+
+#z score to fit with our data
+z_covariate_lag <- zscore(covariate_lag)
+```
+
+```{r}
+#t-0 no lag (1 July 2020 - 13 July 2021)
+#Use original z_covariate matrix
+str(z_covariate)
+#t-1 lag (30 June 2020 - 12 July 2021)
+z_covariate_t1 <- z_covariate_lag[c(16:393)]
+z_covariate_t1 <- as.matrix(t(z_covariate_t1))
+str(z_covariate_t1)
+
+#t-2 lag (29 June 2020 - 11 July 2021)
+z_covariate_t2 <- z_covariate_lag[c(15:392)]
+z_covariate_t2 <- as.matrix(t(z_covariate_t2))
+str(z_covariate_t2)
+
+#t-3 lag (28 June 2020 - 10 July 2021)
+z_covariate_t3 <- z_covariate_lag[c(14:391)]
+z_covariate_t3 <- as.matrix(t(z_covariate_t3))
+str(z_covariate_t3)
+```
+
+
+```{r}
+#test best model(mod1) with lags
+#t-1 lag
+mod1a = mod1
+mod1a$c = z_covariate_t1
+mod1a.fit = MARSS(z_daily_means_condensed, model=mod1a)
+mod1a_params =MARSSparamCIs(mod1a.fit)
+MARSSparamCIs(mod1a.fit)
+saveRDS(mod1a_params,"mod1a_params.RDS")
+#AICc -9832.204 (better than mod1)
+
+#t-2 lag
+mod1b = mod1
+mod1b$c = z_covariate_t2
+mod1b.fit = MARSS(z_daily_means_condensed, model=mod1b)
+mod1b_params =MARSSparamCIs(mod1b.fit)
+MARSSparamCIs(mod1b.fit)
+saveRDS(mod1b_params,"mod1b_params.RDS")
+#AICc -9526.632 (worse than mod1)
+
+#t-3 lag
+mod1c = mod1
+mod1c$c = z_covariate_t3
+mod1c.fit = MARSS(z_daily_means_condensed, model=mod1c)
+mod1c_params =MARSSparamCIs(mod1c.fit)
+MARSSparamCIs(mod1c.fit)
+saveRDS(mod1c_params,"mod1c_params.RDS")
+#AICc -9418.625  (worse than mod1)
+
+#Final decision: use t-1 covariate lag (dataset z_covariate_t1)
+#All subsequent models use t-1 lag in covariate dataset
+```
+
+## Hypothesis 1 (with lag): all states have different levels of stochastic (Q) and deterministic (C) variability 
+```{r}
+# convention: name modhypothesis
+mod1 = list()
+mod1$A = "zero" 
+mod1$Z = "identity"
+mod1$R = "zero" 
+mod1$Q = "diagonal and unequal" 
+mod1$B = "diagonal and unequal" 
+mod1$U = "zero"  
+mod1$C = "unequal" 
+mod1$c = z_covariate_t1
+mod1.fit = MARSS(z_daily_means_condensed, model=mod1)
+mod1_params =MARSSparamCIs(mod1.fit)
+MARSSparamCIs(mod1.fit)
+saveRDS(mod1_params,"mod1_params.RDS")
+```
+## Hypothesis 2: all states have save levels of stochastic (Q) and deterministic (C) variability
+```{r}
+# convention: name modhypothesis
+mod2 = list()
+mod2$A = "zero" 
+mod2$Z = "identity"
+mod2$R = "zero" 
+mod2$Q = "diagonal and equal" 
+mod2$B = "diagonal and equal" 
+mod2$U = "zero"  
+mod2$C = "equal" 
+mod2$c = z_covariate_t1
+mod2.fit = MARSS(z_daily_means_condensed, model=mod2)
+mod2.params =MARSSparamCIs(mod2.fit)
+MARSSparamCIs(mod2.fit)
+```
+```{r}
+# plot residuals
+par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
+  for (j in 1:5) {
+    plot.ts(residuals<-MARSSresiduals(mod2.fit, type = "tt1")$model.residuals[j, ],
+            ylab = "Residual")
+    abline(h = 0, lty = "dashed")
+    acf(residuals,na.action = na.pass)
+  }
+```
+
+## Hypothesis 3: Habitat type (Creeks vs ponds vs Klamath)
+```{r}
+# convention: name modhypothesis
+mod3 = list()
+## Modify matrices
+# 1st: group time series into categories
+hypothesis = c("pond","pond","pond","pond",
+               "pond","pond","pond","pond",
+               "pond","creek","creek","Klamath")
+
+# 2nd: build C matrix (12 x 1)
+mod3$C = matrix(hypothesis)
+mod3$c = z_daily_means_condensed
+
+# 3rd: build Q matrix (12 x 12, with "C vector" in its diagonal)
+Q <-  matrix(list("pond",0,0,0,0,0,0,0,0,0,0,0,
+                  0,"pond",0,0,0,0,0,0,0,0,0,0,
+                  0,0,"pond",0,0,0,0,0,0,0,0,0,
+                  0,0,0,"pond",0,0,0,0,0,0,0,0,
+                  0,0,0,0,"pond",0,0,0,0,0,0,0,
+                  0,0,0,0,0,"pond",0,0,0,0,0,0,
+                  0,0,0,0,0,0,"pond",0,0,0,0,0,
+                  0,0,0,0,0,0,0,"pond",0,0,0,0,
+                  0,0,0,0,0,0,0,0,"pond",0,0,0,
+                  0,0,0,0,0,0,0,0,0,"creek",0,0,
+                  0,0,0,0,0,0,0,0,0,0,"creek",0,
+                  0,0,0,0,0,0,0,0,0,0,0,"Klamath"),12,12)
+
+# 4th: B, identical to Q
+B <- Q
+
+mod3$A = "zero" 
+mod3$Z = "identity"
+mod3$R = "zero" 
+mod3$Q = Q 
+mod3$B = Q
+mod3$U = "zero"  
+mod3$C = matrix(hypothesis) 
+mod3$c = z_covariate_t1
+mod3.fit = MARSS(z_daily_means_condensed, model=mod3)
+mod3.params =MARSSparamCIs(mod3.fit)
+MARSSparamCIs(mod3.fit)
+
+```
+```{r}
+# plot residuals
+par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
+  for (j in 1:5) {
+    plot.ts(residuals<-MARSSresiduals(mod3.fit, type = "tt1")$model.residuals[j, ],
+            ylab = "Residual")
+    abline(h = 0, lty = "dashed")
+    acf(residuals,na.action = na.pass)
+  }
+```
+## Hypothesis 4: Watershed (Horse Creek vs. Seiad Creek)
+```{r}
+# convention: name modhypothesis
+mod4 = list()
+## Modify matrices
+# 1st: group time series into categories
+rownames(z_daily_means_condensed)
+hypothesis2 = c("SC","SC","SC","SC",
+               "SC","HC","HC","HC",
+               "HC","SC","HC","Klamath")
+
+# 2nd: build C matrix (12 x 1)
+mod4$C = matrix(hypothesis2)
+mod4$c = z_daily_means_condensed
+
+# 3rd: build Q matrix (12 x 12, with "C vector" in its diagonal)
+Q <-  matrix(list("SC",0,0,0,0,0,0,0,0,0,0,0,
+                  0,"SC",0,0,0,0,0,0,0,0,0,0,
+                  0,0,"SC",0,0,0,0,0,0,0,0,0,
+                  0,0,0,"SC",0,0,0,0,0,0,0,0,
+                  0,0,0,0,"SC",0,0,0,0,0,0,0,
+                  0,0,0,0,0,"HC",0,0,0,0,0,0,
+                  0,0,0,0,0,0,"HC",0,0,0,0,0,
+                  0,0,0,0,0,0,0,"HC",0,0,0,0,
+                  0,0,0,0,0,0,0,0,"HC",0,0,0,
+                  0,0,0,0,0,0,0,0,0,"SC",0,0,
+                  0,0,0,0,0,0,0,0,0,0,"HC",0,
+                  0,0,0,0,0,0,0,0,0,0,0,"Klamath"),12,12)
+
+# 4th: B, identical as Q
+B <- Q
+
+mod4$A = "zero" 
+mod4$Z = "identity"
+mod4$R = "zero" 
+mod4$Q = Q 
+mod4$B = Q
+mod4$U = "zero"  
+mod4$C = matrix(hypothesis2) 
+mod4$c = z_covariate_t1
+mod4.fit = MARSS(z_daily_means_condensed, model=mod4)
+mod4.params =MARSSparamCIs(mod4.fit)
+MARSSparamCIs(mod4.fit)
+
+```
+```{r}
+# plot residuals
+par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
+  for (j in 1:5) {
+    plot.ts(residuals<-MARSSresiduals(mod4.fit, type = "tt1")$model.residuals[j, ],
+            ylab = "Residual")
+    abline(h = 0, lty = "dashed")
+    acf(residuals,na.action = na.pass)
+  }
+```
+
+##AICc ***Table 2
+```{r}
+data.frame(Model=c("mod1", "mod2", "mod3", "mod4"),
+           AICc=round(c(mod1.fit$AICc,
+                        mod2.fit$AICc,
+                        mod3.fit$AICc,
+                        mod4.fit$AICc),1))
+```
+
+
+
+#FIGURE 3: MAY POND EXAMPLES AND COVARIATE EFFECTS
+##May Pond Example, August 2020
+
+```{r}
+May <- readRDS("May.rds")
+MayCk <- readRDS("MayCk.rds")
+
+May_August <-May %>%filter(day>'2020-08-01'& day < '2020-08-31')
+May_August <- May_August[,c("Temp","date")]         
+MayCk_August <-MayCk %>%filter(day>'2020-08-01'& day < '2020-08-31')
+MayCk_August <- MayCk_August[,c("Temp","date")] 
+```
+
+##Air temperature effects (using parameters from mod1, the best supported MAR model result)
+```{r}
+mod1_params <- readRDS("mod1_params.RDS")
+mod1_df <- broom::tidy(mod1_params)
+mod1_df_clip <- mod1_df[c(37:48),]
+mod1_df_clip$name <- c("Alexander","Stender","Durazo","LowerSeiad","May","FishGulch","Goodman","UpperLaw","LowerLaw","SeiadCreek","HorseCreek","KlamathRiver")
+
+mod1_df_clip$name <- factor(mod1_df_clip$name, levels = c("Alexander","Stender","Durazo","LowerSeiad","May","SeiadCreek","FishGulch","Goodman","UpperLaw","LowerLaw","HorseCreek","KlamathRiver"))
+
+sc <- subset(mod1_df_clip, name == "SeiadCreek")
+hc <- subset(mod1_df_clip, name == "HorseCreek")
+kr <- subset(mod1_df_clip, name == "KlamathRiver")
+```
+
+
+##Combined Figure 3a, 3b, 3c
+```{r}
+f3a <- ggplot()+
+  geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = SC), color ="#D3D3D3", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = SC, color = "Seiad Creek"), size = 1) +
+  geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = May), color ="#ababab", size = 1) +
+  geom_line(data = daily_means_condensed, aes(x = day, y = May, color = "May Pond"), size = 1) +
+  labs(title = "(a) May Pond and Seiad Creek", x = "Date", y = "Temperature (deg C)")+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = c(.6,.8))+
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) 
+
+f3b <- ggplot()+
+  geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
+  geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
+  labs(x = "Date",
+       y = "Hourly Temperature (deg C)",
+       title = "(b) May Pond and Seiad Creek, August 2020")+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = c(.9,1))+
+  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
+  scale_y_continuous("Hourly Temperature (deg C)") 
+
+f3c <- ggplot()+
+  geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Ponds")) +
+  geom_pointrange(data = sc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
+  geom_pointrange(data = hc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
+  geom_pointrange(data = kr, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "River")) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Sites",
+       y = "Air Temperature Effects") +
+  ggtitle("(c) Air Temperature Effects") +
+  theme_classic()+
+  theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1), legend.position =c(.15,.9))+
+  scale_colour_manual("", values = c("Ponds"="#88a0dc", "Creeks"="#ed968c", "River" = "#ab3329"))+
+  scale_y_continuous("Air temperature effects \n (ΔC_water/ΔC_air)")
+
+png("Fig_Figure3Option1.png",width = 500, height = 800)
+(f3a) / (f3b) / (f3c)
+dev.off()
+```
+
+
+
+#FIGURE 4: SEASONAL THERMAL BUFFER ANALYSIS 
+
+##Summer 
+###Data wrangling
+```{r}
+#Read in data
+daily_maxs_condensed <- readRDS('daily_maxs_condensed.RDS')
+daily_maxs_condensed <- as.data.frame(t(daily_maxs_condensed))
+daily_maxs_condensed <- daily_maxs_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
+
+#Create "day" sequence 
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
+day <- as.data.frame(day) #convert "day" to data frame
+
+#Attach day to data frame
+daily_maxs_condensed <- cbind(daily_maxs_condensed,day)
+
+#Format data long
+daily_max_long <- gather(daily_maxs_condensed, site, value, -day)
+data_summer <- daily_max_long %>%filter(day>'2020-07-15'& day < '2020-09-15')
+
+#Make a column for habitat
+data_summer['habitat'] <- NA
+data_summer$habitat <- with(data_summer, ifelse(site == "SC" | site == "HC",as.character("creek"), as.character("pond")))
+
+#Calculate average daily maxs
+SC_max <- data_summer[data_summer$site %in% "SC",]
+mean(SC_max$value,na.rm=T)
+
+HC_max <- data_summer[data_summer$site %in% "HC",]
+mean(HC_max$value,na.rm=T)
+
+SCponds_max <- data_summer[data_summer$site %in% c("AP","SP","Durazo","May","LS"),]
+mean(SCponds_max$value,na.rm=T)
+
+HCponds_max <- data_summer[data_summer$site %in% c("FG","GP","UL","LL"),]
+mean(HCponds_max$value,na.rm=T)
+```
+
+###Seiad Creek 
+####ANOVA 
+```{r}
+data_summer_SC<- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
+data_summer_SC$site<-as.factor(data_summer_SC$site)
+#write.csv(data_summer_SC,"data_summer_SC.csv")
+
+#Check boxplots
+ggplot(data_summer_SC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
+
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_summer_SC) #Levene's Test fails
+anova_SC <- aov(value~site, data = data_summer_SC) #run one way anova
+anova_SC_residuals <- residuals(object = anova_SC ) #Pull out residuals
+ggplot(anova_SC, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals do not look great. 
+
+#Check normality
+shapiro.test(x = anova_SC_residuals) #check for normality. Shows some issue here too. 
+
+#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
+##Log
+data_summer_SC<- data_summer_SC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_summer_SC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_summer_SC<- data_summer_SC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_summer_SC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_summer_SC<- data_summer_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_summer_SC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_summer_SC) 
+leveneTest(log10value ~ site, data = data_summer_SC) 
+leveneTest(sqrtvalue ~ site, data = data_summer_SC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_SC <- aov(value~site, data = data_summer_SC) #run one way anova
+summary(anova_SC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_summer_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+ 
+```
+
+####PostHoc
+```{r}
+#Posthoc analysis
+anova_SC <- aov(value ~ site, data = data_summer_SC)
+summary(anova_SC)##Note the degrees of freedom. 
+tukey<-TukeyHSD(anova_SC)
+print(tukey)
+
+##To help label
+groups <- multcompLetters4(anova_SC, tukey)
+print(groups)
+```
+####Boxplot
+```{r}
+#Boxplot
+scs <- subset(data_summer, site == "SC")
+seiad_summer <- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","SC"))
+
+b1 <- ggplot()+
+  geom_boxplot(data = seiad_summer, aes(x = site, value, col = day))+
+  geom_boxplot(data = scs, aes(x = site, value, col = day))+
+  labs(title = "(a) Seiad, 15 July - 15 September")+
+  theme_classic()+
+  theme(text=element_text(size=16), axis.title.x=element_blank())+
+  scale_x_discrete(name ="Site", 
+                   limits = c("AP","SP","Durazo","LS","May","SC"),
+                    labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
+                               "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
+  scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
+
+b1
+```
+###Horse Creek
+
+####ANOVA 
+```{r}
+#ANOVA
+data_summer_HC <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
+data_summer_HC$site<-as.factor(data_summer_HC$site)
+
+#Check boxplots
+ggplot(data_summer_HC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
+
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_summer_HC) #Levene's Test for for equal variances fails
+anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
+anova_HC_residuals <- residuals(object = anova_HC ) #Pull out residuals
+
+ggplot(anova_HC, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals do not look great. 
+
+#Check normality
+shapiro.test(x = anova_HC_residuals) #check for normality. Shows some issue here too. 
+
+#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
+##Log
+data_summer_HC<- data_summer_HC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_summer_HC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_summer_HC<- data_summer_HC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_summer_HC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_summer_HC<- data_summer_HC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_summer_HC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_summer_HC) 
+leveneTest(log10value ~ site, data = data_summer_HC) 
+leveneTest(sqrtvalue ~ site, data = data_summer_HC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
+summary(anova_HC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_summer_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+ 
+```
+
+
+####PostHoc
+```{r}
+#Posthoc analysis
+anova_HC <- aov(value ~ site, data = data_summer_HC)
+summary(anova_HC)##Note the degrees of freedom. 
+tukey<-TukeyHSD(anova_HC)
+print(tukey)
+
+##To help label
+groups <- multcompLetters4(anova_HC, tukey)
+print(groups)
+```
+####Boxplot
+```{r}
+#Boxplot
+hcs <- subset(data_summer, site == "HC")
+horse_summer <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
+
+b2 <- ggplot()+
+  geom_boxplot(data = horse_summer, aes(x = site, value, col = day))+
+  geom_boxplot(data = hcs, aes(x = site, value, col = day))+
+  labs(title = "(b) Horse, 15 July - 15 September")+
+  theme_classic()+
+  theme(text=element_text(size=16), axis.title.x=element_blank())+
+  scale_x_discrete(name ="Site", 
+                   limits = c("FG","UL","LL","GP","HC"),
+                    labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
+                               "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
+  scale_y_continuous(name="Daily Maximum Temp (C)",limits=c(12.5, 22.5))
+b2
+```
+##Winter 
+###Data wrangling
+```{r}
+#Read in data
+daily_mins_condensed <- readRDS('daily_mins_condensed.RDS')
+daily_mins_condensed <- as.data.frame(t(daily_mins_condensed))
+daily_mins_condensed <- daily_mins_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
+
+#Create "day" sequence 
+day <- seq(mdy('7/1/2020'),mdy('7/13/2021'),by = "day") 
+day <- as.data.frame(day) #convert "day" to data frame
+
+#Attach day to data frame
+daily_mins_condensed <- cbind(daily_mins_condensed,day)
+
+#Format data long
+daily_min_long <- gather(daily_mins_condensed, site, value, -day)
+data_winter <- daily_min_long %>%filter(day>'2020-12-15'& day < '2021-02-15')
+```
+
+###Seiad Creek 
+####ANOVA
+```{r}
+#ANOVA
+data_winter_SC<- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
+data_winter_SC$site<-as.factor(data_winter_SC$site)
+
+#Check boxplots
+ggplot(data_winter_SC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
+
+
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_winter_SC) #Levene's Test for for equal variances fails
+anova_SC2 <- aov(value ~ site, data = data_winter_SC) #run one way anova
+
+anova_SC2_residuals <- residuals(object = anova_SC2 ) #Pull out residuals
+
+ggplot(anova_SC2, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals look ok. 
+
+#Check normality
+shapiro.test(x = anova_SC2_residuals) #check for normality. Seems ok. 
+
+#The preliminary inspection of raw data and residuals are fine, but let's try transformations just in case.
+##Log
+data_winter_SC<- data_winter_SC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_winter_SC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_winter_SC<- data_winter_SC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_winter_SC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_winter_SC<- data_winter_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_winter_SC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_winter_SC) 
+leveneTest(log10value ~ site, data = data_winter_SC) 
+leveneTest(sqrtvalue ~ site, data = data_winter_SC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_SC2 <- aov(value ~ site, data = data_winter_SC) #run one way anova
+summary(anova_SC2) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_winter_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+
+```
+
+####PostHoc
+```{r}
+#Posthoc analysis
+anova_SC2 <- aov(value ~ site, data = data_winter_SC)
+summary(anova_SC2)##Note the degrees of freedom. 
+tukey<-TukeyHSD(anova_SC2)
+print(tukey)
+
+##To help label
+groups <- multcompLetters4(anova_SC2, tukey)
+print(groups)
+```
+####Boxplot
+```{r}
+#Boxplot
+scw <- subset(data_winter, site == "SC")
+seiad_winter <- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
+
+
+b3 <- ggplot()+
+  geom_boxplot(data = seiad_winter, aes(x = site, value, col = day))+
+ geom_boxplot(data = scw, aes(x = site, value, col = day))+
+  labs(title = "(c) Seiad, 15 December - 15 February")+
+  theme_classic()+
+  theme(text=element_text(size=16))+
+  scale_x_discrete(name ="Site", 
+                   limits = c("AP","SP","Durazo","LS","May","SC"),
+                    labels=c("AP" = "Alexander","SP"= "Stender","Durazo"=
+                               "Durazo","LS" = "LowerSeiad","May"="May","SC" = "SeiadCreek"))+
+  scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
+b3
+```
+###Horse Creek
+
+####ANOVA
+```{r}
+#ANOVA
+data_winter_HC <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
+data_winter_HC$site<-as.factor(data_winter_HC$site)
+
+#Check boxplots
+ggplot(data_winter_HC, aes(x=site, y=value)) + 
+  geom_boxplot() + theme_classic()
+
+
+#Variances are okay, but not great. Now check the residuals.
+leveneTest(value ~ site, data = data_winter_HC) #Levene's Test for for equal variances fails
+anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
+
+anova_HC2_residuals <- residuals(object = anova_HC2 ) #Pull out residuals
+
+ggplot(anova_HC2, aes(x = .fitted, y = .resid)) +
+  geom_point() + theme_classic()
+#Residuals look ok. 
+
+#Check normality
+shapiro.test(x = anova_HC2_residuals) #check for normality. Seems ok. 
+
+#The preliminary inspection of raw data and residuals are fine, but let's try transformations just in case.
+##Log
+data_winter_HC<- data_winter_HC %>% mutate(logvalue=log(value)) #Log
+ggplot(data_winter_HC, aes(x=site, y=logvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##Log10
+data_winter_HC<- data_winter_HC %>% mutate(log10value=log10(value)) #Log10
+ggplot(data_winter_HC, aes(x=site, y=log10value)) + 
+  geom_boxplot() + theme_classic()
+
+##Square Root
+data_winter_HC<- data_winter_HC %>% mutate(sqrtvalue=sqrt(value)) #Square root
+ggplot(data_winter_HC, aes(x=site, y=sqrtvalue)) + 
+  geom_boxplot() + theme_classic()
+
+##They all look about the same
+
+leveneTest(logvalue ~ site, data = data_winter_HC) 
+leveneTest(log10value ~ site, data = data_winter_HC) 
+leveneTest(sqrtvalue ~ site, data = data_winter_HC) 
+##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+
+#Anova (untransformed)
+anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
+summary(anova_HC2) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+
+#To be safe, let's check a non-parametric test to see if we get a similar result.
+kruskal.test(value ~ site, data = data_winter_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+
+```
+
+####PostHoc
+```{r}
+#Posthoc analysis
+anova_HC2 <- aov(value ~ site, data = data_winter_HC)
+summary(anova_HC2)##Note the degrees of freedom. 
+tukey<-TukeyHSD(anova_HC2)
+print(tukey)
+
+##To help label
+groups <- multcompLetters4(anova_HC2, tukey)
+print(groups)
+```
+
+####Boxplot
+```{r}
+#Boxplot
+hcw <- subset(data_winter, site == "HC")
+horse_winter <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
+  
+b4 <- ggplot()+
+  geom_boxplot(data = horse_winter, aes(x = site, value, col = day))+
+  geom_boxplot(data = hcw, aes(x = site, value, col = day))+
+  labs(title = "(d) Horse, 15 December - 15 February")+
+  theme_classic()+
+  theme(text=element_text(size=16))+
+  scale_x_discrete(name ="Site", 
+                   limits = c("FG","UL","LL","GP","HC"),
+                    labels=c("FG" = "FishGulch","UL"= "UpperLaw","LL"=
+                               "LowerLaw","GP" = "Goodman","HC"="HorseCreek"))+
+  scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
+b4
+```
+
+##Boxplot Figure ***Figure 4
+```{r}
+png("Fig_Boxplots.png",width = 1000, height = 600)
+(b1 + b2) / (b3 + b4)
+dev.off()
+```
+
+
+#FIGURE 5: WAVELET ANALYSIS
+##Alexander Pond
+###Read in Data
+```{r, results = F}
+# Response variable is water temperature
+# Hourly temperature time series dataset from Alexander Pond called "APH" (Alexander Pond Historical) 
+# Includes data from 16 December 2010 to 24 November 2021
+
+APH <- read.csv("Alexander_Historical_2.csv")
+APH$date <- lubridate::mdy_hm(APH$Date_Time) #convert dates to POSIXct format and bin by hour
+
+#Check for missing data
+missing_data <- APH[!complete.cases(APH),] 
+missing_data 
+
+#Bin data by hour
+APH$hour <- lubridate::round_date(APH$date, unit="hour") 
+head(APH) #check the dataset start date, use for "hour" sequence
+tail(APH) #check the dataset end date, use for "hour" sequence
+
+#Create hourly sequence to ensure all missing data is accounted for
+hour <- seq(mdy_h('12/16/2010 13'),mdy_h('11/24/2021 14'),by = "hour") #Create an object that goes hour by hour for the entire time series 
+hour <- as.data.frame(hour) 
+APH <- left_join(hour, APH) 
+missing_data <- APH[!complete.cases(APH),] 
+missing_data 
+
+#z score s
+APH$zTemp <- zscore(APH$Temp)
+
+#Convert to time series
+APH_ts <- ts(APH$zTemp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+ts.plot(APH_ts,main="Temperature",ylab = "Temperature (C)", xlab = "Time")
+```
+
+###Interpolate missing data
+```{r, cache = TRUE}
+#Run ARIMA to interpolate missing data
+y <- APH_ts
+date_s <- APH$hour
+y_na <- ifelse(is.na(y),0,NA)
+length(which(y_na == 0))/length(y)
+
+fit <- auto.arima(y,trace=TRUE) #fit limited number of models (faster)
+summary(fit) #Take a closer look at the best fitted model
+forecast_fit <- forecast(y,model=fit) #Predict values using the calibration dataset
+saveRDS(forecast_fit1,"forecast_fit1.RDS") #This step takes a long time to run, so saving intermediate results to facilitate figure creation later. 
+
+```
+
+###Plot interpolated data
+```{r}
+#Plot the observed and interpolated temperature regimes
+par(mar=c(2,4,1,1)) 
+plot(date_s,y,xlab="Time",ylab="Temp",lwd=2,type="l") 
+lines(date_s,forecast_fit$fitted,col="steelblue")
+
+#Plot predicted versus observed values
+scatter.smooth(y,forecast_fit$fitted,xlab="Observed",ylab="Predicted",pch=".",main = "Temperature")
+abline(0,1,lty=2)
+R2 = round(cor.test(y,forecast_fit$fitted,na.rm=T)$estimate^2,2)
+mtext(side=3,line=-2,adj=0.1,bquote(R^2 == .(R2)))
+```
+
+###Check residuals of interpolated data
+```{r}
+checkresiduals(fit) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
+
+#plot residuals versus fitted values (=check for heterosedasticity)
+par(mar=c(4,4,4,4))
+scatter.smooth(forecast_fit$fitted,forecast_fit$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
+```
+
+
+###Smooth interpolated data
+```{r, cache = TRUE}
+#Interpolate missing values using a Kalman filter (=smoother)
+y_inter <- na_kalman(y,model=fit$model) 
+
+#Plot the results
+par(mar=c(2,4,1,1))
+plot(y_inter,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
+lines(y,col="black")
+```
+
+###Format interpolated time series into a dataframe
+```{r, results = F}
+#Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates 
+x <- as.data.frame(y_inter) #change y_inter from a ts object to a dataframe
+x$ID <- seq.int(nrow(x)) #add a unique ID
+date <- as.data.frame(APH$hour) #make the unique "hour" index from APH into a separate dataframe
+date$ID <- seq.int(nrow(date)) #create unique ID that aligns with x
+y_inter_df <- merge(x,date,"ID") #merge the two dataframes
+colnames(y_inter_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter_df,"y_inter_df.rds")
+y_inter_df <- readRDS("y_inter_df.rds") #Save as an intermediate data product
+```
+###Check for NAs
+```{r}
+missing_data <- y_inter_df[!complete.cases(y_inter_df),] 
+missing_data 
+```
+###Wavelet
+```{r}
+APH.w <- analyze.wavelet(y_inter_df, "temp",
+                        loess.span = 0,
+                        dt = 1/24, 
+                        make.pval = TRUE, n.sim = 1000,
+                        date.format = "%Y-%m-%d-%h") 
+str(APH.w)
+saveRDS(APH.w,"APH.w.rds") #Note: very large file; save as an intermediate data product
+
+```
+
+###Wavelet Image ***Figure 5a
+```{r}
+#read in data as needed
+##Note: APH.w saved locally, very large file
+APH.w <- readRDS("APH.w.rds")
+
+png("Fig_APH_Wavelet.png", width = 800, height = 500)
+wt.image(APH.w, color.key = "quantile", n.levels = 100, main = "Alexander Pond Wavelet",  
+         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), 
+         label.time.axis=TRUE,
+         show.date=TRUE,
+         label.period.axis=TRUE,
+         periodlab = "period (days)")
+dev.off()
+
+wt.avg(APH.w, siglvl = 0.05, sigcol = "red",
+       periodlab = "period (days)")
+```
+
+###Pull 24 hr period ***Figure 5a
+```{r}
+#read in data as needed
+y_inter_df <- readRDS("y_inter_df.rds")
+
+#create a dataframe of power and of date
+power_day <- as.data.frame(APH.w$Power[71,])
+power_day <- cbind(power_day, y_inter_df$date)
+colnames(power_day) <- c("power","date")
+
+png("Fig_APH_Power.png",width = 800, height = 150)
+ggplot()+
+  geom_line(data = power_day, aes(x = date, y = power))+
+  labs(x = "Date",
+       y = "Power")+
+  theme_classic()+
+  theme(text=element_text(size=16))
+dev.off()
+
+```
+
+##Stender Pond
+###Read in Data
+```{r, results = F}
+# Response variable is water temperature
+# Hourly temperature time series dataset from Stender Pond called "SPH" (Stender Pond Historical) 
+# Includes data from 16 December 2010 to 24 November 2021
+
+SPH <- read.csv("Stender_Historical_2.csv")
+SPH$date <- lubridate::mdy_hm(SPH$Date_Time) #convert dates to POSIXct format and bin by hour
+
+#Check for missing data
+missing_data <- SPH[!complete.cases(SPH),] 
+missing_data 
+
+#Bin data by hour
+SPH$hour <- lubridate::round_date(SPH$date, unit="hour")
+head(SPH) #check the dataset start date, use for "hour" sequence
+tail(SPH) #check the dataset end date, use for "hour" sequence
+
+#Create hourly sequence to ensure all missing data is accounted for
+hour <- seq(mdy_h('12/16/2010 13'),mdy_h('11/24/2021 14'),by = "hour") #Create an object that goes hour by hour for the entire time series 
+hour <- as.data.frame(hour) 
+SPH <- left_join(hour, SPH) 
+missing_data <- SPH[!complete.cases(SPH),] 
+missing_data 
+
+#z score 
+SPH$zTemp <- zscore(SPH$Temp)
+
+#Convert to time series
+SPH_ts <- ts(SPH$zTemp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+ts.plot(SPH_ts,main="Temperature",ylab = "Temperature (C)", xlab = "Time")
+```
+
+###Interpolate missing data
+```{r, cache = TRUE}
+#Run ARIMA to interpolate missing data
+y2 <- SPH_ts
+date_s2 <- SPH$hour
+y_na2 <- ifelse(is.na(y2),0,NA)
+length(which(y_na2 == 0))/length(y2)
+
+fit2 <- auto.arima(y2,trace=TRUE) #fit limited number of models (faster)
+summary(fit2) #Take a closer look at the best fitted model
+forecast_fit2 <- forecast(y2,model=fit2) #Predict values using the calibration dataset
+saveRDS(forecast_fit2,"forecast_fit2.RDS") #This step takes a long time to run, so saving intermediate results to facilitate figure creation later. 
+```
+
+###Plot interpolated data
+```{r}
+#Plot the observed and interpolated temperature regimes
+par(mar=c(2,4,1,1)) 
+plot(date_s2,y2,xlab="Time",ylab="Temp",lwd=2,type="l") 
+lines(date_s2,forecast_fit2$fitted,col="steelblue")
+
+#Plot predicted versus observed values
+scatter.smooth(y2,forecast_fit2$fitted,xlab="Observed",ylab="Predicted",pch=".",main = "Temperature")
+abline(0,1,lty=2)
+R2 = round(cor.test(y2,forecast_fit2$fitted,na.rm=T)$estimate^2,2)
+mtext(side=3,line=-2,adj=0.1,bquote(R^2 == .(R2)))
+```
+
+###Check residuals of interpolated data
+```{r}
+#Check residuals of the interpolation process
+checkresiduals(fit2) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
+
+#plot residuals versus fitted values (=check for heterosedasticity)
+par(mar=c(4,4,4,4))
+scatter.smooth(forecast_fit2$fitted,forecast_fit2$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
+```
+
+###Smooth interpolated data
+```{r, cache = TRUE}
+#Interpolate missing values using a Kalman filter (=smoother)
+y_inter2 <- na_kalman(y2,model=fit2$model) 
+
+#Plot the results
+par(mar=c(2,4,1,1))
+plot(y_inter2,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
+lines(y2,col="black")
+```
+
+###Format interpolated time series into a dataframe
+```{r, results = F}
+#Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates 
+x2 <- as.data.frame(y_inter2) #change y_inter from a ts to a dataframe
+x2$ID <- seq.int(nrow(x2)) #add a unique ID, check it is correct length
+date2 <- as.data.frame(SPH$hour) #make the unique "hour" index from SPH into a separate dataframe
+date2$ID <- seq.int(nrow(date2)) #give that a unique ID that aligns with x
+y_inter2_df <- merge(x2,date2,"ID") #merge the two dataframes
+colnames(y_inter2_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter2_df,"y_inter2_df.rds") #Save as an intermediate data product
+```
+###Check for NAs
+```{r}
+missing_data <- y_inter2_df[!complete.cases(y_inter2_df),] 
+missing_data 
+```
+###Wavelet
+```{r}
+#run the wavelet
+?analyze.wavelet
+SPH.w <- analyze.wavelet(y_inter2_df, "temp",
+                        loess.span = 0,
+                        dt = 1/24, 
+                        make.pval = TRUE, n.sim = 1000,
+                        date.format = "%Y-%m-%d-%h") 
+str(SPH.w) # Output
+saveRDS(SPH.w,"SPH.w.rds") #Save as an intermediate data product
+```
+
+###Wavelet Image ***Figure 5b
+```{r}
+#read in data as needed
+##Note: SPH.w saved locally, NOT on github (too big)
+SPH.w <- readRDS("SPH.w.rds")
+
+png("Fig_SPH_Wavelet.png", width = 800, height = 500)
+wt.image(SPH.w, color.key = "quantile", n.levels = 250, main = "Stender Pond Wavelet",  
+         legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
+         periodlab = "period (days)")
+dev.off()
+
+wt.avg(SPH.w, siglvl = 0.05, sigcol = "red",
+       periodlab = "period (days)")
+```
+
+###Pull 24 hr period ***Figure 5b
+```{r}
+#read in data as needed
+y_inter2_df <- readRDS("y_inter2_df.rds")
+
+#create a dataframe of power and of date
+power_day2 <- as.data.frame(SPH.w$Power[71,])
+power_day2 <- cbind(power_day2, y_inter2_df$date)
+colnames(power_day2) <- c("power","date")
+
+png("Fig_SPH_Power.png",width = 800, height = 150)
+ggplot()+
+  geom_line(data = power_day2, aes(x = date, y = power))+
+  labs(x = "Date",
+       y = "Power")+
+  theme_classic()+
+  theme(text=element_text(size=16))
+dev.off()
+
+```
+
+
+#FIGURE S1: TEMPERATURE TIME SERIES OF ALL SENSORS
+```{r}
+#Alexander Pond (AP)
+colorAP <- c("AP1" = "#88a0dc")
+AP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = AP1, color = "AP1"), size = 1) +
+  labs(title = "Alexander Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorAP, labels = c("AP1"))+ 
+  theme(text=element_text(size=16), legend.position="none")
+
+#Stender Pond (SP)
+colorSP <- c("SP1" = "#88a0dc", "SP2" = "#ed968c")
+SP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = SP1, color = "SP1"), size = 1) +
+  geom_line(aes(x = day, y = SP2, color = "SP2"), size = 1)+
+  labs(title = "Stender Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorSP, labels = c("SP1","SP2"))+ 
+  theme(text=element_text(size=16), legend.position="none")+
+  geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
+
+
+#Durazo Pond (Durazo)
+colorD <- c("Durazo" = "#88a0dc")
+D <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = Durazo, color = "Durazo"), size = 1) +
+  labs(title = "Durazo Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorD, labels = c("SP1","SP2"))+ 
+  theme(text=element_text(size=16), legend.position="none")
+
+#Lower Seiad Pond (LS)
+colorLS <- c("LS" = "#88a0dc")
+LS <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = LS, color = "LS"), size = 1) +
+  labs(title = "Lower Seiad Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorLS, labels = c("LS"))+ 
+  theme(text=element_text(size=16), legend.position="none")
+
+#May Pond (May)
+colorMay <- c("May" = "#88a0dc")
+May <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = May, color = "May"), size = 1) +
+  labs(title = "May Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorMay, labels = c("May"))+ 
+  theme(text=element_text(size=16), legend.position="none")
+
+#Fish Gulch Pond (FG)
+colorFG <- c("FG" = "#88a0dc")
+FG <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = FG3, color = "FG"), size = 1) +
+  labs(title = "Fish Gulch Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorFG, labels = c("FG"))+ 
+  theme(text=element_text(size=16), legend.position="none")
+
+#Goodman Pond (GP)
+colorGP <- c("GP2" = "#88a0dc", "GP3" = "#ed968c")
+GP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = GP2, color = "GP2"), size = 1) +
+  geom_line(aes(x = day, y = GP3, color = "GP3"), size = 1) +
+  labs(title = "Goodman Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorGP, labels = c("GP2","GP3"))+ 
+  theme(text=element_text(size=16), legend.position="none")+
+  geom_text(x=200, y=20, label="r = 0.979, p < 0.001", size = 5)
+
+
+#Upper Lawrence Pond (UL)
+colorUL <- c("ULout" = "#88a0dc", "UL3" = "#ed968c")
+UL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = ULout, color = "ULout"), size = 1) +
+  geom_line(aes(x = day, y = UL3, color = "UL3"), size = 1) +
+  labs(title = "Upper Lawrence Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorUL, labels = c("ULout","UL3"))+ 
+  theme(text=element_text(size=16), legend.position="none")+
+  geom_text(x=200, y=20, label="r = 0.991, p < 0.001", size = 5)
+
+#Lower Lawrence Pond (LL)
+colorLL <- c("LL1" = "#88a0dc", "LL2" = "#ed968c", "LL3" = "#f9d14a")
+LL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = LL1, color = "LL1"), size = 1) +
+  geom_line(aes(x = day, y = LL2, color = "LL2"), size = 1)+
+  geom_line(aes(x = day, y = LL3, color = "LL3"), size = 1)+
+  labs(title = "Lower Lawrence Pond", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorLL, labels = c("LL1","LL2","LL3"))+ 
+  theme(text=element_text(size=16), legend.position="none")+
+  geom_text(x=200, y=20, label="r = 0.988 p < 0.001 \nr = 0.981, p < 0.001\n r = 0.997, p < 0.001", size = 5)
+
+#Seiad Creek (SC)
+colorSC <- c("LSck" = "#88a0dc", "MayCk"="#ed968c")
+SC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = LSck, color = "LSck"), size = 1)+
+  geom_line(aes(x = day, y = MayCk, color = "MayCk"), size = 1)+
+  labs(title = "Seiad Creek", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorSC, labels = c("LSck","MayCk"))+ 
+  theme(text=element_text(size=16), legend.position="none")+
+  geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
+
+
+#Horse Creek (HC)
+colorHC <- c("FGck" = "#88a0dc", "ULck" = "#ed968c")
+HC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
+  geom_line(aes(x = day, y = FGck, color = "FGck"), size = 1) +
+  geom_line(aes(x = day, y = ULck, color = "ULck"), size = 1)+
+  labs(title = "Horse Creek", x = "Day", y = "Temperature (degrees C)", color = "Legend")+
+  scale_y_continuous(name="Daily Mean Temp (C)",limits=c(0, 25))+
+  theme_classic()+
+  scale_color_manual(values = colorHC, labels = c("FGck","ULck"))+ 
+  theme(text=element_text(size=16), legend.position="none")+
+  geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
+
+empty <- daily_means %>% rowid_to_column(var = "day") %>%
+  ggplot()+
+  geom_blank(aes(x = day, y = ULck, color =))+
+  theme(panel.background = element_rect(fill = 'white', colour = 'white')) +
+  theme_void()
+
+png("Fig_RawTempSC.png",width = 1000, height = 600)
+(AP + SP + D) / (LS + May + SC)
+dev.off()
+
+png("Fig_RawTempHC.png",width = 1000, height = 600)
+(FG + GP + UL) / (LL + HC + empty)
+dev.off()
+```
+
+
+#TABLE S1: CORELLATION ANALYSIS OF SENSORS IN SAME PONDS
+##Correlation, Mean, and Standard Deviation between multiple temperature time series in a pond (only for ponds with more than 1 sensor)
+```{r}
+#Stender Pond (SP) 
+#Check correlation between SP1 and SP2
+corSP <- cor.test(daily_means$SP1, daily_means$SP2, use = "na.or.complete", method = "pearson")
+#Tightly correlated-- 0.9987
+
+#Check differences
+diffSP <- daily_means$SP1 - daily_means$SP2
+meanSP <- mean(diffSP,na.rm=T) #0.2552828
+sdSP <- sd(diffSP,na.rm=T) #0.286226
+
+#Goodman Pond (GP) 
+#Check correlation between SP1 and SP2
+cor.test(daily_means$GP2, daily_means$GP3, use = "na.or.complete", method = "pearson")
+#Tightly correlated-- 0.979
+
+#Check differences
+diffGP <- daily_means$GP3 - daily_means$GP2
+meanGP <- mean(diffGP,na.rm=T) #0.1340852
+sdGP <- sd(diffGP,na.rm=T) #0.7083215
+
+#Check correlation between SP1 and SP2
+cor.test(daily_means$GP1, daily_means$GP2, use = "na.or.complete", method = "pearson")
+# correlated-- 0.9850231  
+
+#Check differences
+diffGPa <- daily_means$GP2 - daily_means$GP1
+meanGPa <- mean(diffGPa,na.rm=T) #-0.577712
+sdGPa <- sd(diffGP,na.rm=T) #1.249114
+
+#Upper Lawrence Pond (UL)
+#Check correlation between SP1 and SP2
+cor.test(daily_means$ULout, daily_means$UL3, use = "na.or.complete", method = "pearson")
+diffUL <-daily_means$ULout- daily_means$UL3
+mean(diffUL,na.rm=T) 
+sd(diffUL,na.rm=T) 
+
+#r = 0.9914487
+#mean = 0.8115467
+#sd = 0.6547496
+
+#Lower Lawrence Pond (LL)
+cor.test(daily_means$LL1, daily_means$LL2, use = "na.or.complete", method = "pearson")
+diffLL <-daily_means$LL1- daily_means$LL2
+mean(diffLL,na.rm=T) 
+sd(diffLL,na.rm=T) 
+
+#r = 0.9878339
+#mean = 0.006177339
+#sd = 0.6465672
+
+cor.test(daily_means$LL1, daily_means$LL3, use = "na.or.complete", method = "pearson")
+diffLL <-daily_means$LL1- daily_means$LL3
+mean(diffLL,na.rm=T) 
+sd(diffLL,na.rm=T) 
+
+#r = 0.9807396   
+#mean = -0.3401413
+#sd = 0.7437103
+
+cor.test(daily_means$LL2, daily_means$LL3, use = "na.or.complete", method = "pearson")
+diffLL <-daily_means$LL2- daily_means$LL3
+mean(diffLL,na.rm=T) 
+sd(diffLL,na.rm=T) 
+
+#r = 0.9974816  
+#mean = -0.3463187
+#sd = 0.2118427
+
+
+#Seiad Creek (SC)
+cor.test(daily_means$LSck, daily_means$MayCk, use = "na.or.complete", method = "pearson")
+diffSC <-daily_means$LSck- daily_means$MayCk
+mean(diffSC,na.rm=T) 
+sd(diffSC,na.rm=T) 
+
+#r = 0.9985793
+#mean =  0.1046814
+#sd = 0.2593251
+
+
+#Horse Creek (HC)
+cor.test(daily_means$FGck, daily_means$ULck, use = "na.or.complete", method = "pearson")
+diffHC <-daily_means$FGck- daily_means$ULck
+mean(diffHC,na.rm=T) 
+sd(diffHC,na.rm=T) 
+
+#r = 0.9987093
+#mean = 0.6443471
+#sd = 0.3673631
+```
+
+#FIGURE S2: DISSOLVED OXYGEN AND TEMPERATURE DEPTH PROFILES
+##Data Wrangling
+```{r, include=FALSE}
+dp <- read.csv("DepthProfiles_All.csv")
+```
+###Fish Gulch
+```{r, include=FALSE}
+mycolors <- met.brewer(name="Archambault",n=7,type="discrete")
+mycolors[5]
+dp_FG <- dp[dp$site %in% c("FishGulch"),]
+dp_FG_1 <- dp_FG[dp_FG$profile %in% 1,]
+dp_FG_2 <- dp_FG[dp_FG$profile %in% 2,]
+
+do_FG <- ggplot()+
+  geom_line(data = dp_FG_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_FG_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_FG <- ggplot()+
+  geom_line(data = dp_FG_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_FG_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+FG_plot <- (do_FG + temp_FG) + plot_annotation(title = "Fish Gulch", theme = theme(plot.title = element_text(size = 16)))
+FG_plot
+```
+
+###Goodman
+```{r, include=FALSE}
+dp_GP <- dp[dp$site %in% c("Goodman"),]
+
+do_GP <- ggplot()+
+  geom_line(data = dp_GP, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_GP <- ggplot()+
+  geom_line(data = dp_GP, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+GP_plot <- (do_GP + temp_GP) + plot_annotation(
+  title = "Goodman", theme = theme(plot.title = element_text(size = 16)))
+GP_plot
+```
+
+###Upper Lawrence 1
+```{r, include=FALSE}
+dp_UL1 <- dp[dp$site %in% c("UpperLawrence1"),]
+
+do_UL1 <- ggplot()+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_UL1 <- ggplot()+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#f9d14a", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+UL1_plot <-print((do_UL1 + temp_UL1) + plot_annotation(
+  title = "Upper Lawrence 1", theme = theme(plot.title = element_text(size = 16))))
+```
+###Upper Lawrence 2
+```{r, include=FALSE}
+dp_UL2 <- dp[dp$site %in% c("UpperLawrence2"),]
+
+do_UL2 <- ggplot()+
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_UL2 <- ggplot()+
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+UL2_plot <-(do_UL2 + temp_UL2) + plot_annotation(
+  title = "Upper Lawrence 2", theme = theme(plot.title = element_text(size = 16)))
+```
+###Upper Lawrence 3
+```{r, include=FALSE}
+dp_UL3 <- dp[dp$site %in% c("UpperLawrence3"),]
+dp_UL3_1 <- dp_UL3[dp_UL3$profile %in% 1,]
+dp_UL3_2 <- dp_UL3[dp_UL3$profile %in% 2,]
+
+do_UL3 <- ggplot()+
+  geom_line(data = dp_UL3_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_UL3_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = do_mgL),color ="#f9d14a", size = 1) +
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = do_mgL),color ="#e78429", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_UL3 <- ggplot()+
+  geom_line(data = dp_UL3_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_UL3_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  geom_line(data = dp_UL1, aes(x = depth_cm, y = temp_c),color ="#f9d14a", size = 1)+
+  geom_line(data = dp_UL2, aes(x = depth_cm, y = temp_c),color ="#e78429", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+UL3_plot <-(do_UL3 + temp_UL3) + plot_annotation(
+  title = "Upper Lawrence", theme = theme(plot.title = element_text(size = 16)))
+```
+
+###Lower Lawrence
+```{r, include=FALSE}
+dp_LL <- dp[dp$site %in% c("LowerLawrence"),]
+dp_LL_1 <- dp_LL[dp_LL$profile %in% 1,]
+dp_LL_2 <- dp_LL[dp_LL$profile %in% 2,]
+
+do_LL <- ggplot()+
+  geom_line(data = dp_LL_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_LL_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_LL <- ggplot()+
+  geom_line(data = dp_LL_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_LL_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+LL_plot <-(do_LL + temp_LL) + plot_annotation(
+  title = "Lower Lawrence", theme = theme(plot.title = element_text(size = 16)))
+```
+
+###Alexander
+```{r, include=FALSE}
+dp_AP <- dp[dp$site %in% c("Alexander"),]
+dp_AP_1 <- dp_AP[dp_AP$profile %in% 1,]
+dp_AP_2 <- dp_AP[dp_AP$profile %in% 2,]
+
+do_AP <- ggplot()+
+  geom_line(data = dp_AP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_AP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_AP <- ggplot()+
+  geom_line(data = dp_AP_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_AP_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+AP_plot <-(do_AP + temp_AP) + plot_annotation(
+  title = "Alexander", theme = theme(plot.title = element_text(size = 16)))
+```
+
+###Stender
+```{r, include=FALSE}
+dp_SP <- dp[dp$site %in% c("Stender"),]
+dp_SP_1 <- dp_SP[dp_SP$profile %in% 1,]
+dp_SP_2 <- dp_SP[dp_SP$profile %in% 2,]
+
+do_SP <- ggplot()+
+  geom_line(data = dp_SP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_SP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_SP <- ggplot()+
+  geom_line(data = dp_SP_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_SP_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+SP_plot <-(do_SP + temp_SP) + plot_annotation(
+  title = "Stender", theme = theme(plot.title = element_text(size = 16)))
+```
+###Durazo
+```{r, include=FALSE}
+dp_DP <- dp[dp$site %in% c("Durazo"),]
+dp_DP_1 <- dp_DP[dp_DP$profile %in% 1,]
+dp_DP_2 <- dp_DP[dp_DP$profile %in% 2,]
+
+do_DP <- ggplot()+
+  geom_line(data = dp_DP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_DP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_DP <- ggplot()+
+  geom_line(data = dp_DP_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_DP_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+DP_plot <-(do_DP + temp_DP) + plot_annotation(
+  title = "Durazo", theme = theme(plot.title = element_text(size = 16)))
+```
+###May
+```{r, include=FALSE}
+dp_MP <- dp[dp$site %in% c("May"),]
+dp_MP_1 <- dp_MP[dp_MP$profile %in% 1,]
+dp_MP_2 <- dp_MP[dp_MP$profile %in% 2,]
+
+do_MP <- ggplot()+
+  geom_line(data = dp_MP_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_MP_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_MP <- ggplot()+
+  geom_line(data = dp_MP_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_MP_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+MP_plot <-(do_MP + temp_MP) + plot_annotation(
+  title = "May", theme = theme(plot.title = element_text(size = 16)))
+```
+
+###Lower Seiad
+```{r, include=FALSE}
+dp_LS <- dp[dp$site %in% c("LowerSeiad"),]
+dp_LS_1 <- dp_LS[dp_LS$profile %in% 1,]
+dp_LS_2 <- dp_LS[dp_LS$profile %in% 2,]
+
+do_LS <- ggplot()+
+  geom_line(data = dp_LS_1, aes(x = depth_cm, y = do_mgL),color ="#ab3329", size = 1) +
+  geom_line(data = dp_LS_2, aes(x = depth_cm, y = do_mgL),color ="#381a61", size = 1) +
+  labs(y = "Dissolved Oxygen (mg/L)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+    #ylim = c(0,11.5))+
+  theme_classic()
+
+temp_LS <- ggplot()+
+  geom_line(data = dp_LS_1, aes(x = depth_cm, y = temp_c),color ="#ab3329", size = 1)+
+  geom_line(data = dp_LS_2, aes(x = depth_cm, y = temp_c),color ="#381a61", size = 1)+
+  labs(y = "Temperature (C)", x = "Depth from surface (cm)")+
+  #reverse depth so it starts at zero
+  scale_x_reverse()+
+  scale_y_reverse()+
+  scale_y_continuous(position="right")+
+  coord_flip()+
+  theme_classic()
+
+LS_plot <-(do_LS + temp_LS) + plot_annotation(
+  title = "Lower Seiad", theme = theme(plot.title = element_text(size = 16)))
+```
+
+##Combined Plots ***Figure S2
+```{r}
+png("Fig_FGProfile.png", width = 400, height = 400)
+FG_plot
+dev.off()
+
+png("Fig_GPProfile.png", width = 400, height = 400)
+GP_plot
+dev.off()
+
+#png("Fig_UL1Profile.png", width = 400, height = 400)
+#UL1_plot
+#dev.off()
+#png("Fig_UL2Profile.png", width = 400, height = 400)
+#UL2_plot
+#dev.off()
+png("Fig_UL3Profile.png", width = 400, height = 400)
+UL3_plot
+dev.off()
+
+png("Fig_LLProfile.png", width = 400, height = 400)
+LL_plot
+dev.off()
+
+png("Fig_APProfile.png", width = 400, height = 400)
+AP_plot
+dev.off()
+
+png("Fig_SPProfile.png", width = 400, height = 400)
+SP_plot
+dev.off()
+
+png("Fig_DPProfile.png", width = 400, height = 400)
+DP_plot
+dev.off()
+
+png("Fig_MPProfile.png", width = 400, height = 400)
+MP_plot
+dev.off()
+
+png("Fig_LSProfile.png", width = 400, height = 400)
+LS_plot
+dev.off()
+
+
+```
+
+
+# FIGURE S3: DISSOLVED OXYGEN TIME SERIES
+### Alexander SN 214, 15:40 on 10 July to 14:17 on 16 July
+#### Total Depth (m): 0.66			Sensor Depth (from btm, m): 0.58	
+```{r, include=FALSE}
+AP_DO <- read.csv("Sen214_DO.csv")
+AP_DO$date <- lubridate::mdy_hm(AP_DO$date_time)
+head(AP_DO, n = 50) 
+tail(AP_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startAP <- which(AP_DO$date == "2020-07-10 15:45:00 UTC", arr.ind = TRUE)
+endAP <- which(AP_DO$date == "2020-07-16 14:10:00 UTC", arr.ind = TRUE)
+
+AP_DO <- AP_DO[c(startAP:endAP),] 
+str(AP_DO) 
+AP_DO <- AP_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- AP_DO[!complete.cases(AP_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = AP_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Alexander Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Stender SN 217, 15:00 on 11 July to 14:43 on 16 July 
+#### Total Depth (m): 0.82			Sensor Depth (from btm, m): 0.5	
+```{r, include=FALSE}
+SP_DO <- read.csv("Sen217_DO.csv")
+SP_DO$date <- lubridate::mdy_hm(SP_DO$date_time)
+head(SP_DO, n = 50) 
+tail(SP_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startSP <- which(SP_DO$date == "2020-07-11 15:05:00 UTC", arr.ind = TRUE)
+#Chop hours off the end
+endSP <- which(SP_DO$date == "2020-07-16 06:35:00 UTC", arr.ind = TRUE)
+
+SP_DO <- SP_DO[c(startSP:endSP),] 
+str(SP_DO) 
+SP_DO <- SP_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- SP_DO[!complete.cases(SP_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = SP_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Stender Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Durazo SN 212, 11:02 on 17 July to 12:20 on 23 July
+#### Total Depth (m): 0.75			Sensor Depth (from btm, m): 0.5	
+```{r, include=FALSE}
+Durazo_DO <- read.csv("Sen212_DO.csv")
+Durazo_DO$date <- lubridate::mdy_hm(Durazo_DO$date_time)
+head(Durazo_DO, n = 50) 
+tail(Durazo_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startDurazo <- which(Durazo_DO$date == "2020-07-17 11:10:00 UTC", arr.ind = TRUE)
+endDurazo <- which(Durazo_DO$date == "2020-07-23 02:15:00 UTC", arr.ind = TRUE)
+
+Durazo_DO <- Durazo_DO[c(startDurazo:endDurazo),] 
+str(Durazo_DO) 
+Durazo_DO <- Durazo_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- Durazo_DO[!complete.cases(Durazo_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = Durazo_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Durazo Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Lower Seiad SN 216, 11:32 on 17 July to 12:32 on 23 July 
+#### Total Depth (m): 1.86			Sensor Depth (from btm, m): 0.55	
+```{r, include=FALSE}
+LS_DO <- read.csv("Sen216_DO.csv")
+LS_DO$date <- lubridate::mdy_hm(LS_DO$date_time)
+head(LS_DO, n = 50) 
+tail(LS_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startLS <- which(LS_DO$date == "2020-07-17 11:40:00 UTC", arr.ind = TRUE)
+endLS <- which(LS_DO$date == "2020-07-23 12:25:00 UTC", arr.ind = TRUE)
+
+LS_DO <- LS_DO[c(startLS:endLS),] 
+str(LS_DO) 
+LS_DO <- LS_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- LS_DO[!complete.cases(LS_DO),] 
+missing_data
+```
+
+```{r}
+ggplot()+
+  geom_line(data = LS_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Lower Seiad Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### May SN 213, 11:50 on 17 July to 12:42 on 23 July 
+#### Total Depth (m): 1.1			Sensor Depth (from btm, m): 0.9	
+```{r, include=FALSE}
+May_DO <- read.csv("Sen213_DO.csv")
+May_DO$date <- lubridate::mdy_hm(May_DO$date_time)
+head(May_DO, n = 50) 
+tail(May_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startMay <- which(May_DO$date == "2020-07-17 11:55:00 UTC", arr.ind = TRUE)
+endMay <- which(May_DO$date == "2020-07-23 12:50:00 UTC", arr.ind = TRUE)
+
+May_DO <- May_DO[c(startMay:endMay),] 
+str(May_DO) 
+May_DO <- May_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- May_DO[!complete.cases(May_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = May_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "May Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### FishGulch SN 215, 12:46 on 10 July to 10:53 on 16 July
+#### Total Depth (m): 0.51			Sensor Depth (from btm, m): 0.45
+```{r, include=FALSE}
+FG_DO <- read.csv("Sen215_DO.csv")
+FG_DO$date <- lubridate::mdy_hm(FG_DO$date_time)
+head(FG_DO, n = 50) 
+tail(FG_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startFG <- which(FG_DO$date == "2020-07-10 12:50:00 UTC", arr.ind = TRUE)
+endFG <- which(FG_DO$date == "2020-07-16 10:45:00 UTC", arr.ind = TRUE)
+
+FG_DO <- FG_DO[c(startFG:endFG),] 
+str(FG_DO) 
+FG_DO <- FG_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- FG_DO[!complete.cases(FG_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = FG_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Fish Gulch Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+###Goodman SN 212, 10:47 on 9 July to 12:35 on 16 July
+#### Total Depth (m): 0.57			Sensor Depth (from btm, m): 0.40
+```{r, include=FALSE}
+GP_DO <- read.csv("Sen212_DO.csv")
+GP_DO$date <- lubridate::mdy_hm(GP_DO$date_time)
+head(GP_DO, n = 50) 
+tail(GP_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startGP <- which(GP_DO$date == "2020-07-09 10:55:00 UTC", arr.ind = TRUE)
+#Cut off a few hours on the backend
+endGP <- which(GP_DO$date == "2020-07-16 04:40:00 UTC", arr.ind = TRUE)
+
+GP_DO <- GP_DO[c(startGP:endGP),] 
+str(GP_DO) 
+GP_DO <- GP_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- GP_DO[!complete.cases(GP_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = GP_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Goodman Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Upper Law SN 216, 15:24 on 7 July to 11:45 on 16 July
+#### Total Depth (m): 0.22			Sensor Depth (from btm, m): 0.15
+```{r, include=FALSE}
+UL_DO <- read.csv("Sen216_DO.csv")
+UL_DO$date <- lubridate::mdy_hm(UL_DO$date_time)
+head(UL_DO, n = 50) 
+tail(UL_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startUL <- which(UL_DO$date == "2020-07-07 15:30:00 UTC", arr.ind = TRUE)
+endUL <- which(UL_DO$date == "2020-07-16 11:40:00 UTC", arr.ind = TRUE)
+
+UL_DO <- UL_DO[c(startUL:endUL),] 
+str(UL_DO) 
+UL_DO <- UL_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- UL_DO[!complete.cases(UL_DO),] 
+missing_data
+
+```
+
+
+```{r}
+ggplot()+
+  geom_line(data = UL_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Upper Lawrence Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+### Lower Law SN 213, 15:45 on 9 July to 12:02 on 16 July 
+#### Total Depth (m): 0.33			Sensor Depth (from btm, m): 0.20	
+
+```{r, include=FALSE}
+LL_DO <- read.csv("Sen213_DO.csv")
+LL_DO$date <- lubridate::mdy_hm(LL_DO$date_time)
+head(LL_DO, n = 50) 
+tail(LL_DO, n = 100) 
+
+#search for start date + 1 time step (5 min)
+startLL <- which(LL_DO$date == "2020-07-09 15:50:00 UTC", arr.ind = TRUE)
+#cut off a few hours on the back end
+endLL <- which(LL_DO$date == "2020-07-16 03:55:00 UTC", arr.ind = TRUE)
+
+LL_DO <- LL_DO[c(startLL:endLL),] 
+str(LL_DO) 
+LL_DO <- LL_DO %>% 
+  group_by(date) %>% 
+  summarize(DO_mg.L = mean(DO_mg.L))#Remove duplicates
+missing_data <- LL_DO[!complete.cases(LL_DO),] 
+missing_data
+```
+```{r}
+ggplot()+
+  geom_line(data = LL_DO, aes(x = date, y = DO_mg.L), color ="#e78429", size = 1) +
+  labs(title = "Lower Lawrence Pond DO", x = "Date", y = "Dissolved Oxygen (mg/L)")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16),legend.position = "none")
+```
+
+##Combined graphs ***Figure S3
+```{r}
+mycolors <- met.brewer(name="Archambault",n=5,type="discrete")
+
+colorSC <- c("Alexander" = "#88a0dc", "Stender" = "#7c4b73", 'Durazo' = "#ed968c", 'LowerSeiad' = "#e78429", 'May' = "#f9d14a")
+scdo <- ggplot()+
+  geom_line(data = AP_DO, aes(x = date, y = DO_mg.L, color ="Alexander"), size = 1) +
+  geom_line(data = SP_DO, aes(x = date, y = DO_mg.L, color ="Stender"), size = 1) +
+  geom_line(data = Durazo_DO, aes(x = date, y = DO_mg.L, color ="Durazo"), size = 1) +
+  geom_line(data = LS_DO, aes(x = date, y = DO_mg.L, color ="LowerSeiad"), size = 1) +
+  geom_line(data = May_DO, aes(x = date, y = DO_mg.L, color ="May"), size = 1) +
+  labs(title = "Seiad Creek Ponds DO", x = "Date", y = "Dissolved Oxygen (mg/L)", color = "Legend")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = 'right') + 
+  scale_colour_manual("", values = c("Alexander" = "#88a0dc", "Stender" = "#7c4b73", 'Durazo' = "#ed968c", 'LowerSeiad' = "#e78429", 'May' = "#f9d14a"))
+ 
+```
+```{r}
+
+colorHC <- c("FishGulch" = "#88a0dc", "Goodman" = "#ed968c", 'UpperLaw' = "#f9d14a", 'LowerLaw' = "#e78429")
+hcdo <- ggplot()+
+  geom_line(data = FG_DO, aes(x = date, y = DO_mg.L, color ="FishGulch"), size = 1) +
+  geom_line(data = GP_DO, aes(x = date, y = DO_mg.L, color ="Goodman"), size = 1) +
+  geom_line(data = UL_DO, aes(x = date, y = DO_mg.L, color ="UpperLaw"), size = 1) +
+  geom_line(data = LL_DO, aes(x = date, y = DO_mg.L, color ="LowerLaw"), size = 1) +
+  labs(title = "Horse Creek Ponds DO", x = "Date", y = "Dissolved Oxygen (mg/L)", color = "Legend")+
+  scale_y_continuous(limits=c(0,12))+
+  theme_classic()+
+  theme(text=element_text(size=16), legend.position = 'right') + 
+  scale_colour_manual("", values = c("FishGulch" = "#88a0dc", "Goodman" = "#ed968c", 'UpperLaw' = "#f9d14a", 'LowerLaw' = "#e78429"))
+ 
+```
+
+
+#TABLE S2: DAILY THERMAL BUFFERING 
+##Data wrangling
+```{r}
+quarterHour_condensed$day <- lubridate::floor_date(quarterHour_condensed$quarterHour, unit="day") #Bin by day
+
+#Create a function for coefficient of variance (CV)
+CV <- function(x){
+        (sd(x)/mean(x))*100
+}
+```
+
+##Individual CVs
+```{r}
+#Alexander Pond 
+AP_CV <- quarterHour_condensed %>%       #15 min data
+  group_by(day) %>%                      #Group by day
+  dplyr::select(AP) %>%                  #Select site
+  summarize(CV = CV(AP))                 #Calculate CV per day for one site
+AP_CV_mean <- mean(AP_CV$CV,na.rm=T)     #Take all days as mean over entire year
+plot(AP_CV$day,AP_CV$CV)                 #Plot a time series of CV
+
+#Stender Pond
+SP_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(SP) %>%
+  summarize(CV = CV(SP))
+SP_CV_mean <- mean(SP_CV$CV,na.rm=T)
+plot(SP_CV$day,SP_CV$CV)
+
+#Durazo Pond
+Durazo_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(Durazo) %>%
+  summarize(CV = CV(Durazo))
+Durazo_CV_mean <- mean(Durazo_CV$CV,na.rm=T)
+plot(Durazo_CV$day,Durazo_CV$CV)
+
+#Lower Seiad 
+LS_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(LS) %>%
+  summarize(CV = CV(LS))
+LS_CV_mean <- mean(LS_CV$CV,na.rm=T)
+plot(LS_CV$day,LS_CV$CV)
+
+#May Pond
+May_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(May) %>%
+  summarize(CV = CV(May))
+May_CV_mean <- mean(May_CV$CV,na.rm=T)
+plot(May_CV$day,May_CV$CV)
+
+#Fish Gulch
+FG_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(FG) %>%
+  summarize(CV = CV(FG))
+FG_CV_mean <- mean(FG_CV$CV,na.rm=T)
+plot(FG_CV$day,FG_CV$CV)
+
+#Goodman Pond
+GP_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(GP) %>%
+  summarize(CV = CV(GP))
+GP_CV_mean <- mean(GP_CV$CV,na.rm=T)
+plot(GP_CV$day,GP_CV$CV)
+
+#Upper Lawrence
+UL_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(UL) %>%
+  summarize(CV = CV(UL))
+UL_CV_mean <- mean(UL_CV$CV,na.rm=T)
+plot(UL_CV$day,UL_CV$CV)
+
+#Lower Lawrence
+LL_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(LL) %>%
+  summarize(CV = CV(LL))
+LL_CV_mean <- mean(LL_CV$CV,na.rm=T)
+plot(LL_CV$day,LL_CV$CV)
+
+#Seiad Creek
+SC_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(SC) %>%
+  summarize(CV = CV(SC))
+SC_CV_mean <- mean(SC_CV$CV,na.rm=T)
+plot(SC_CV$day,SC_CV$CV)
+
+#Horse Creek
+HC_CV <- quarterHour_condensed %>% 
+  group_by(day) %>% 
+  dplyr::select(HC) %>%
+  summarize(CV = CV(HC))
+HC_CV_mean <- mean(HC_CV$CV,na.rm=T)
+plot(HC_CV$day,HC_CV$CV)
+
+```
+
+##CV Ratios
+```{r}
+#CV Ratios are Creeks/Ponds
+#No Buffering = <1
+#Buffering = >1
+
+#Alexander Pond 
+SC_AP <- SC_CV_mean/AP_CV_mean
+
+#Stender Pond
+SC_SP <- SC_CV_mean/SP_CV_mean
+
+#Durazo Pond
+SC_Durazo <- SC_CV_mean/Durazo_CV_mean
+
+#Lower Seiad 
+SC_LS <- SC_CV_mean/LS_CV_mean
+
+#May Pond
+SC_May <- SC_CV_mean/May_CV_mean
+
+#Fish Gulch
+HC_FG <- HC_CV_mean/FG_CV_mean
+
+#Goodman Pond
+HC_GP <- HC_CV_mean/GP_CV_mean
+
+#Upper Lawrence
+HC_UL <- HC_CV_mean/UL_CV_mean
+
+#Lower Lawrence
+HC_LL <- HC_CV_mean/LL_CV_mean
+```
+
+##CV Data Table ***Table S2
+```{r}
+data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Horse Creek","Horse Creek","Horse Creek","Horse Creek"),
+           CreekCV=round(c(SC_CV_mean,SC_CV_mean,SC_CV_mean,SC_CV_mean,SC_CV_mean,HC_CV_mean,HC_CV_mean,HC_CV_mean,HC_CV_mean),2),
+           Pond=c("Alexander","Stender","Durazo","Lower Seiad","May","Fish Gulch","Goodman","Upper Lawrence","Lower Lawrence"),
+           PondCV=round(c(AP_CV_mean,SP_CV_mean,Durazo_CV_mean,LS_CV_mean,May_CV_mean,FG_CV_mean,GP_CV_mean,UL_CV_mean,LL_CV_mean),2),
+           CV_Ratio=(round(c(SC_AP, 
+                        SC_SP,
+                        SC_Durazo,
+                        SC_LS,
+                        SC_May,
+                        HC_FG,
+                        HC_GP,
+                        HC_UL,
+                        HC_LL),2)))
+
+```
+
+
+
