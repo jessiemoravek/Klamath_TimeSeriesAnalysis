@@ -32,32 +32,22 @@ library(WaveletComp)
 
 ```
 
-#Questions for Albert
-##Did not include code for interpolating Klamath River temps at Seiad
-##Can I include separate files for all the DO probes? Annoying and hard to combine them all. 
-##Should I include the time lag testing in the MAR model code? 
-##Can I use a separate dataset that I pulled specially for the May pond exampels? 
-##Note: Wavelet figures used in final manuscript are produced without z-scored data to make the figure more interpretable. Which code should I include in this code here?
-##FUnding sources smh
-
-
 #DATASETS
 ```{r}
 #POND TEMPERATURE DATA
-##Pond and creek temperature data were obtained via a series of 21 temperature sensors (HOBO MX2201) placed in  9 ponds and 2 creeks from July 2020-July 2021. Water temperature was measured every 15 minutes. 
+##Pond and creek temperature data were obtained via a series of temperature sensors (HOBO MX2201) placed in  9 ponds and 2 creeks from July 2020-July 2021. Water temperature was measured every 15 minutes. Sensors in the same pond or creek were averaged to create a single time series for each site. 
 ##Klamath River temperature data was collected by the Karuk Tribe and accessed with permission from the Karuk Tribe Water Quality Department (Accessed 27 September 2022). We used data between May 2020 and February 2021. We used a combination of data readings from the Seiad Valley station as well as interpolated data using a linear regression from the Orleans station when Seiad Valley data was unavailable (5.5% of Seiad Valley data was interpolated). Water temperature was measured every hour.  
 
-quarterHour_condensed <- readRDS("quarterHour_condensed.rds") #Matrix of 15 min temps
-daily_means_condensed <- readRDS("daily_means_condensed.rds") #Matrix of mean daily water temperatures for 9 ponds, 2 creeks, and mainstem Klamath from 1 July 2020 to 13 July 2021. "Condensed" means that all invalid sensors are removed from the dataset.
-daily_maxs_condensed <- readRDS("daily_maxs_condensed.rds") #Matrix of daily maximum temps
-daily_mins_condensed <- readRDS("daily_mins_condensed.rds") #Matrix of daily minimum temps
+quarterHour_condensed <- readRDS("quarterHour_condensed.rds") #Matrix of 15 min temperatures
+daily_means_condensed <- readRDS("daily_means_condensed.rds") #Matrix of mean daily water temperatures
+daily_maxs_condensed <- readRDS("daily_maxs_condensed.rds") #Matrix of daily maximum temperatures
+daily_mins_condensed <- readRDS("daily_mins_condensed.rds") #Matrix of daily minimum temperatures
 
 
 #AIR TEMPERATURE DATA
-##Both air temperature datasets were downloaded from the National Oceanic and Atmospheric Administration’s Climate Data Online database for the Slater Butte air sensor in Siskiyou County, CA.
+##The air temperature dataset was downloaded from the National Oceanic and Atmospheric Administration’s Climate Data Online database for the Slater Butte air sensor in Siskiyou County, CA.
 
-covariate <- readRDS("covariate.rds") #Matrix of mean daily air temperatures from 1 July 2020 to 13 July 2021
-airtemp_lag <- read.csv("SlaterButteAirTemp_2020_2021_lag.csv") #Same air temperature dataset as above, but lagged by several days to test most appropriate time lag for MAR models  
+airtemp_lag <- read.csv("SlaterButteAirTemp_2020_2021_lag.csv") 
 
 
 #HISTORICAL POND TEMPERATURE DATA
@@ -68,21 +58,25 @@ SPH <- read.csv("Stender_Historical_2.csv") #Historical data from Stender Pond
 
 
 #DISSOLVED OXYGEN DATA
-##DO was measured using HOBO DO probes for several days in each pond in July 2020. 
 ##DO and temperature depth profiles were taken using a YSI DO200M in June 2023.
+##DO was measured using HOBO DO probes for several days in each pond in July 2020. 
 
 dp <- read.csv("DepthProfiles_All.csv") #Temperature and Dissolved Oxygen depth profiles taken in June 2023
-
+AP_DO <- read.csv("Sen214_DO.csv")
+SP_DO <- read.csv("Sen217_DO.csv")
+Durazo_DO <- read.csv("Sen212_DO.csv")
+LS_DO <- read.csv("Sen216_DO.csv")
+May_DO <- read.csv("Sen213_DO.csv")
+FG_DO <- read.csv("Sen215_DO.csv")
+GP_DO <- read.csv("Sen212_DO.csv")
+UL_DO <- read.csv("Sen216_DO.csv")
+LL_DO <- read.csv("Sen213_DO.csv")
 
 
 #MISCELLANEOUS DATA 
 ##Miscellaneous data pulled into separate datasets for easier figure creation
 
-daily_means <- readRDS("daily_means.RDS") #Same as daily_means_condensed but in dataset format. This data set is not "condensed" meaning it still includes sensors that were ultimately removed from analysis. 
-mod1_params <- readRDS("mod1_params.RDS") #Parameters from the best supported MAR model, used to make Figure 3c (air temperature effects)
-May <- readRDS("May.rds") #Pulled May Pond data to make Figure 3a and 3b (May Pond example)
-MayCk <- readRDS("MayCk.rds") #Pulled May Creek data to make Figure 3a and 3b (May Pond example)
-
+daily_means <- readRDS("daily_means.RDS") #This data set is not "condensed", meaning it has each sensor time series listed individually instead of averaging all sensors in the same site. We used this dataset only for visualization.
 ```
 
 #FIGURE 2 & TABLE 2: MAR MODEL 
@@ -92,37 +86,8 @@ z_daily_means_condensed <- zscore(daily_means_condensed)
 z_covariate <- zscore(covariate)
 ```
 
-## Hypothesis 1: all states have different levels of stochastic (Q) and deterministic (C) variability 
-```{r}
-# convention: name modhypothesis
-mod1 = list()
-mod1$A = "zero" 
-mod1$Z = "identity"
-mod1$R = "zero" 
-mod1$Q = "diagonal and unequal" 
-mod1$B = "diagonal and unequal" 
-mod1$U = "zero"  
-mod1$C = "unequal" 
-mod1$c = z_covariate
-mod1.fit = MARSS(z_daily_means_condensed, model=mod1)
-mod1_params =MARSSparamCIs(mod1.fit)
-MARSSparamCIs(mod1.fit)
-saveRDS(mod1_params,"mod1_params.RDS")
-```
-
-```{r}
-# plot residuals
-par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
-  for (j in 1:5) {
-    plot.ts(residuals<-MARSSresiduals(mod1.fit, type = "tt1")$model.residuals[j, ],
-            ylab = "Residual")
-    abline(h = 0, lty = "dashed")
-    acf(residuals,na.action = na.pass)
-  }
-```
-
-###Test covariate time lags
-####Pull in slightly lagged air temp dataset
+##Process covariate data
+###All models use a t-1 (1 day lagged) air temperature dataset
 ```{r}
 airtemp_lag <- read.csv("SlaterButteAirTemp_2020_2021_lag.csv")
 
@@ -140,63 +105,14 @@ covariate_lag <- (t(airtemp_lag$TAVG))
 
 #z score to fit with our data
 z_covariate_lag <- zscore(covariate_lag)
-```
 
-```{r}
-#t-0 no lag (1 July 2020 - 13 July 2021)
-#Use original z_covariate matrix
-str(z_covariate)
-#t-1 lag (30 June 2020 - 12 July 2021)
+#t-1 lag (30 June 2020 - 12 July 2021) - 1 day lag
 z_covariate_t1 <- z_covariate_lag[c(16:393)]
 z_covariate_t1 <- as.matrix(t(z_covariate_t1))
 str(z_covariate_t1)
-
-#t-2 lag (29 June 2020 - 11 July 2021)
-z_covariate_t2 <- z_covariate_lag[c(15:392)]
-z_covariate_t2 <- as.matrix(t(z_covariate_t2))
-str(z_covariate_t2)
-
-#t-3 lag (28 June 2020 - 10 July 2021)
-z_covariate_t3 <- z_covariate_lag[c(14:391)]
-z_covariate_t3 <- as.matrix(t(z_covariate_t3))
-str(z_covariate_t3)
 ```
 
-
-```{r}
-#test best model(mod1) with lags
-#t-1 lag
-mod1a = mod1
-mod1a$c = z_covariate_t1
-mod1a.fit = MARSS(z_daily_means_condensed, model=mod1a)
-mod1a_params =MARSSparamCIs(mod1a.fit)
-MARSSparamCIs(mod1a.fit)
-saveRDS(mod1a_params,"mod1a_params.RDS")
-#AICc -9832.204 (better than mod1)
-
-#t-2 lag
-mod1b = mod1
-mod1b$c = z_covariate_t2
-mod1b.fit = MARSS(z_daily_means_condensed, model=mod1b)
-mod1b_params =MARSSparamCIs(mod1b.fit)
-MARSSparamCIs(mod1b.fit)
-saveRDS(mod1b_params,"mod1b_params.RDS")
-#AICc -9526.632 (worse than mod1)
-
-#t-3 lag
-mod1c = mod1
-mod1c$c = z_covariate_t3
-mod1c.fit = MARSS(z_daily_means_condensed, model=mod1c)
-mod1c_params =MARSSparamCIs(mod1c.fit)
-MARSSparamCIs(mod1c.fit)
-saveRDS(mod1c_params,"mod1c_params.RDS")
-#AICc -9418.625  (worse than mod1)
-
-#Final decision: use t-1 covariate lag (dataset z_covariate_t1)
-#All subsequent models use t-1 lag in covariate dataset
-```
-
-## Hypothesis 1 (with lag): all states have different levels of stochastic (Q) and deterministic (C) variability 
+## Hypothesis 1: all states have different levels of stochastic (Q) and deterministic (C) variability 
 ```{r}
 # convention: name modhypothesis
 mod1 = list()
@@ -361,19 +277,7 @@ data.frame(Model=c("mod1", "mod2", "mod3", "mod4"),
 
 
 
-#FIGURE 3: MAY POND EXAMPLES AND COVARIATE EFFECTS
-##May Pond Example, August 2020
-
-```{r}
-May <- readRDS("May.rds")
-MayCk <- readRDS("MayCk.rds")
-
-May_August <-May %>%filter(day>'2020-08-01'& day < '2020-08-31')
-May_August <- May_August[,c("Temp","date")]         
-MayCk_August <-MayCk %>%filter(day>'2020-08-01'& day < '2020-08-31')
-MayCk_August <- MayCk_August[,c("Temp","date")] 
-```
-
+#FIGURE 3c: COVARIATE EFFECTS
 ##Air temperature effects (using parameters from mod1, the best supported MAR model result)
 ```{r}
 mod1_params <- readRDS("mod1_params.RDS")
@@ -388,31 +292,8 @@ hc <- subset(mod1_df_clip, name == "HorseCreek")
 kr <- subset(mod1_df_clip, name == "KlamathRiver")
 ```
 
-
-##Combined Figure 3a, 3b, 3c
 ```{r}
-f3a <- ggplot()+
-  geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = SC), color ="#D3D3D3", size = 1) +
-  geom_line(data = daily_means_condensed, aes(x = day, y = SC, color = "Seiad Creek"), size = 1) +
-  geom_line(data = quarterHour_condensed, aes(x = quarterHour, y = May), color ="#ababab", size = 1) +
-  geom_line(data = daily_means_condensed, aes(x = day, y = May, color = "May Pond"), size = 1) +
-  labs(title = "(a) May Pond and Seiad Creek", x = "Date", y = "Temperature (deg C)")+
-  theme_classic()+
-  theme(text=element_text(size=16),legend.position = c(.6,.8))+
-  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) 
-
-f3b <- ggplot()+
-  geom_line(data = May_August, aes(x = date, y = Temp, color = "May Pond"))+
-  geom_line(data = MayCk_August, aes(x = date, y = Temp, color = "Seiad Creek"))+
-  labs(x = "Date",
-       y = "Hourly Temperature (deg C)",
-       title = "(b) May Pond and Seiad Creek, August 2020")+
-  theme_classic()+
-  theme(text=element_text(size=16), legend.position = c(.9,1))+
-  scale_colour_manual("", values = c("May Pond"="#88a0dc", "Seiad Creek"="#ed968c")) +
-  scale_y_continuous("Hourly Temperature (deg C)") 
-
-f3c <- ggplot()+
+ggplot()+
   geom_pointrange(data = mod1_df_clip, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Ponds")) +
   geom_pointrange(data = sc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
   geom_pointrange(data = hc, aes(x = name, y = estimate, ymin = conf.low, ymax = conf.up, color = "Creeks")) +
@@ -425,12 +306,7 @@ f3c <- ggplot()+
   theme(text=element_text(size=16),axis.text.x=element_text(angle = 45, hjust = 1), legend.position =c(.15,.9))+
   scale_colour_manual("", values = c("Ponds"="#88a0dc", "Creeks"="#ed968c", "River" = "#ab3329"))+
   scale_y_continuous("Air temperature effects \n (ΔC_water/ΔC_air)")
-
-png("Fig_Figure3Option1.png",width = 500, height = 800)
-(f3a) / (f3b) / (f3c)
-dev.off()
 ```
-
 
 
 #FIGURE 4: SEASONAL THERMAL BUFFER ANALYSIS 
@@ -479,49 +355,28 @@ data_summer_SC<- subset(data_summer, site %in% c("AP","SP","Durazo","LS","May","
 data_summer_SC$site<-as.factor(data_summer_SC$site)
 #write.csv(data_summer_SC,"data_summer_SC.csv")
 
-#Check boxplots
+#Check variance
 ggplot(data_summer_SC, aes(x=site, y=value)) + 
   geom_boxplot() + theme_classic()
 
-#Variances are okay, but not great. Now check the residuals.
+#Check residuals.
 leveneTest(value ~ site, data = data_summer_SC) #Levene's Test fails
-anova_SC <- aov(value~site, data = data_summer_SC) #run one way anova
+anova_SC <- aov(value~site, data = data_summer_SC) #Run one way anova
 anova_SC_residuals <- residuals(object = anova_SC ) #Pull out residuals
 ggplot(anova_SC, aes(x = .fitted, y = .resid)) +
   geom_point() + theme_classic()
-#Residuals do not look great. 
 
 #Check normality
-shapiro.test(x = anova_SC_residuals) #check for normality. Shows some issue here too. 
+shapiro.test(x = anova_SC_residuals) 
 
-#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
-##Log
-data_summer_SC<- data_summer_SC %>% mutate(logvalue=log(value)) #Log
-ggplot(data_summer_SC, aes(x=site, y=logvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##Log10
-data_summer_SC<- data_summer_SC %>% mutate(log10value=log10(value)) #Log10
-ggplot(data_summer_SC, aes(x=site, y=log10value)) + 
-  geom_boxplot() + theme_classic()
-
-##Square Root
-data_summer_SC<- data_summer_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
-ggplot(data_summer_SC, aes(x=site, y=sqrtvalue)) + 
-  geom_boxplot() + theme_classic()
-##They all look about the same
-
-leveneTest(logvalue ~ site, data = data_summer_SC) 
-leveneTest(log10value ~ site, data = data_summer_SC) 
-leveneTest(sqrtvalue ~ site, data = data_summer_SC) 
-##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+#Note: Also tried log, log10, and square root transformations on this data and results and assumption checks are similar to untransformed data. We ultimately used untransformed data to make interpretation easier. 
 
 #Anova (untransformed)
 anova_SC <- aov(value~site, data = data_summer_SC) #run one way anova
-summary(anova_SC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+summary(anova_SC) ##Significance is very high. 
 
 #To be safe, let's check a non-parametric test to see if we get a similar result.
-kruskal.test(value ~ site, data = data_summer_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+kruskal.test(value ~ site, data = data_summer_SC) ##Also  significant. 
  
 ```
 
@@ -565,54 +420,29 @@ b1
 data_summer_HC <- subset(data_summer, site %in% c("FG","UL","LL","GP","HC"))
 data_summer_HC$site<-as.factor(data_summer_HC$site)
 
-#Check boxplots
+#Check variance
 ggplot(data_summer_HC, aes(x=site, y=value)) + 
   geom_boxplot() + theme_classic()
 
-#Variances are okay, but not great. Now check the residuals.
-leveneTest(value ~ site, data = data_summer_HC) #Levene's Test for for equal variances fails
-anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
+#Check residuals
+leveneTest(value ~ site, data = data_summer_HC) #Levene's Test fails
+anova_HC <- aov(value ~ site, data = data_summer_HC) #Run one way anova
 anova_HC_residuals <- residuals(object = anova_HC ) #Pull out residuals
-
 ggplot(anova_HC, aes(x = .fitted, y = .resid)) +
   geom_point() + theme_classic()
-#Residuals do not look great. 
 
 #Check normality
-shapiro.test(x = anova_HC_residuals) #check for normality. Shows some issue here too. 
+shapiro.test(x = anova_HC_residuals) #check for normality
 
-#The preliminary inspection of raw data and residuals aren't ideal. Let's try transformations.
-##Log
-data_summer_HC<- data_summer_HC %>% mutate(logvalue=log(value)) #Log
-ggplot(data_summer_HC, aes(x=site, y=logvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##Log10
-data_summer_HC<- data_summer_HC %>% mutate(log10value=log10(value)) #Log10
-ggplot(data_summer_HC, aes(x=site, y=log10value)) + 
-  geom_boxplot() + theme_classic()
-
-##Square Root
-data_summer_HC<- data_summer_HC %>% mutate(sqrtvalue=sqrt(value)) #Square root
-ggplot(data_summer_HC, aes(x=site, y=sqrtvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##They all look about the same
-
-leveneTest(logvalue ~ site, data = data_summer_HC) 
-leveneTest(log10value ~ site, data = data_summer_HC) 
-leveneTest(sqrtvalue ~ site, data = data_summer_HC) 
-##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+#Note: Also tried log, log10, and square root transformations on this data and results and assumption checks are similar to untransformed data. We ultimately used untransformed data to make interpretation easier. 
 
 #Anova (untransformed)
 anova_HC <- aov(value ~ site, data = data_summer_HC) #run one way anova
-summary(anova_HC) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+summary(anova_HC) ##Significance is very high
 
 #To be safe, let's check a non-parametric test to see if we get a similar result.
-kruskal.test(value ~ site, data = data_summer_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
- 
+kruskal.test(value ~ site, data = data_summer_HC) ##Also  significant. 
 ```
-
 
 ####PostHoc
 ```{r}
@@ -672,17 +502,14 @@ data_winter <- daily_min_long %>%filter(day>'2020-12-15'& day < '2021-02-15')
 data_winter_SC<- subset(data_winter, site %in% c("AP","SP","Durazo","LS","May","SC"))
 data_winter_SC$site<-as.factor(data_winter_SC$site)
 
-#Check boxplots
+#Check variance
 ggplot(data_winter_SC, aes(x=site, y=value)) + 
   geom_boxplot() + theme_classic()
 
-
-#Variances are okay, but not great. Now check the residuals.
-leveneTest(value ~ site, data = data_winter_SC) #Levene's Test for for equal variances fails
+#Check residuals.
+leveneTest(value ~ site, data = data_winter_SC) #Levene's Test 
 anova_SC2 <- aov(value ~ site, data = data_winter_SC) #run one way anova
-
 anova_SC2_residuals <- residuals(object = anova_SC2 ) #Pull out residuals
-
 ggplot(anova_SC2, aes(x = .fitted, y = .resid)) +
   geom_point() + theme_classic()
 #Residuals look ok. 
@@ -690,36 +517,14 @@ ggplot(anova_SC2, aes(x = .fitted, y = .resid)) +
 #Check normality
 shapiro.test(x = anova_SC2_residuals) #check for normality. Seems ok. 
 
-#The preliminary inspection of raw data and residuals are fine, but let's try transformations just in case.
-##Log
-data_winter_SC<- data_winter_SC %>% mutate(logvalue=log(value)) #Log
-ggplot(data_winter_SC, aes(x=site, y=logvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##Log10
-data_winter_SC<- data_winter_SC %>% mutate(log10value=log10(value)) #Log10
-ggplot(data_winter_SC, aes(x=site, y=log10value)) + 
-  geom_boxplot() + theme_classic()
-
-##Square Root
-data_winter_SC<- data_winter_SC %>% mutate(sqrtvalue=sqrt(value)) #Square root
-ggplot(data_winter_SC, aes(x=site, y=sqrtvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##They all look about the same
-
-leveneTest(logvalue ~ site, data = data_winter_SC) 
-leveneTest(log10value ~ site, data = data_winter_SC) 
-leveneTest(sqrtvalue ~ site, data = data_winter_SC) 
-##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+#Note: Also tried log, log10, and square root transformations on this data and results and assumption checks are similar to untransformed data. We ultimately used untransformed data to make interpretation easier. 
 
 #Anova (untransformed)
 anova_SC2 <- aov(value ~ site, data = data_winter_SC) #run one way anova
-summary(anova_SC2) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+summary(anova_SC2) ##Significance is very high
 
 #To be safe, let's check a non-parametric test to see if we get a similar result.
-kruskal.test(value ~ site, data = data_winter_SC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
-
+kruskal.test(value ~ site, data = data_winter_SC) ##Also  significant. 
 ```
 
 ####PostHoc
@@ -754,61 +559,36 @@ b3 <- ggplot()+
   scale_y_continuous(name="Daily Minimum Temp (C)",limits=c(4, 12))
 b3
 ```
-###Horse Creek
 
+###Horse Creek
 ####ANOVA
 ```{r}
 #ANOVA
 data_winter_HC <- subset(data_winter, site %in% c("FG","UL","LL","GP","HC"))
 data_winter_HC$site<-as.factor(data_winter_HC$site)
 
-#Check boxplots
+#Check variance
 ggplot(data_winter_HC, aes(x=site, y=value)) + 
   geom_boxplot() + theme_classic()
 
-
-#Variances are okay, but not great. Now check the residuals.
-leveneTest(value ~ site, data = data_winter_HC) #Levene's Test for for equal variances fails
+#Check residuals.
+leveneTest(value ~ site, data = data_winter_HC) #Levene's Test 
 anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
-
 anova_HC2_residuals <- residuals(object = anova_HC2 ) #Pull out residuals
-
 ggplot(anova_HC2, aes(x = .fitted, y = .resid)) +
   geom_point() + theme_classic()
-#Residuals look ok. 
 
 #Check normality
-shapiro.test(x = anova_HC2_residuals) #check for normality. Seems ok. 
+shapiro.test(x = anova_HC2_residuals) #check for normality
 
-#The preliminary inspection of raw data and residuals are fine, but let's try transformations just in case.
-##Log
-data_winter_HC<- data_winter_HC %>% mutate(logvalue=log(value)) #Log
-ggplot(data_winter_HC, aes(x=site, y=logvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##Log10
-data_winter_HC<- data_winter_HC %>% mutate(log10value=log10(value)) #Log10
-ggplot(data_winter_HC, aes(x=site, y=log10value)) + 
-  geom_boxplot() + theme_classic()
-
-##Square Root
-data_winter_HC<- data_winter_HC %>% mutate(sqrtvalue=sqrt(value)) #Square root
-ggplot(data_winter_HC, aes(x=site, y=sqrtvalue)) + 
-  geom_boxplot() + theme_classic()
-
-##They all look about the same
-
-leveneTest(logvalue ~ site, data = data_winter_HC) 
-leveneTest(log10value ~ site, data = data_winter_HC) 
-leveneTest(sqrtvalue ~ site, data = data_winter_HC) 
-##All fail, but the graph isn't awful. I think it's good enough. So, try the ANOVA again and stick with the untransformed data to ease interpretation. 
+#Note: Also tried log, log10, and square root transformations on this data and results and assumption checks are similar to untransformed data. We ultimately used untransformed data to make interpretation easier. 
 
 #Anova (untransformed)
 anova_HC2 <- aov(value ~ site, data = data_winter_HC) #run one way anova
-summary(anova_HC2) ##This is CRAZY significant. Even if we were way off on our assumptions (they aren't that bad), we could easily absorb the increased error.
+summary(anova_HC2) ##Significance is very high. 
 
 #To be safe, let's check a non-parametric test to see if we get a similar result.
-kruskal.test(value ~ site, data = data_winter_HC) ##Also  significant. This is pretty solid evidence that what you're seeing in the ANOVA is legit. 
+kruskal.test(value ~ site, data = data_winter_HC) ##Also  significant. 
 
 ```
 
@@ -880,97 +660,76 @@ APH <- left_join(hour, APH)
 missing_data <- APH[!complete.cases(APH),] 
 missing_data 
 
-#z score s
-APH$zTemp <- zscore(APH$Temp)
-
-#Convert to time series
-APH_ts <- ts(APH$zTemp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
-ts.plot(APH_ts,main="Temperature",ylab = "Temperature (C)", xlab = "Time")
 ```
 
 ###Interpolate missing data
 ```{r, cache = TRUE}
+#Create time-series object using non-transformed temperature values (Temp)
+APH_ts2 <- ts(APH$Temp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+
 #Run ARIMA to interpolate missing data
-y <- APH_ts
-date_s <- APH$hour
-y_na <- ifelse(is.na(y),0,NA)
-length(which(y_na == 0))/length(y)
+y3 <- APH_ts2
+date_s3 <- APH$hour
+y_na3 <- ifelse(is.na(y3),0,NA)
 
-fit <- auto.arima(y,trace=TRUE) #fit limited number of models (faster)
-summary(fit) #Take a closer look at the best fitted model
-forecast_fit <- forecast(y,model=fit) #Predict values using the calibration dataset
-saveRDS(forecast_fit1,"forecast_fit1.RDS") #This step takes a long time to run, so saving intermediate results to facilitate figure creation later. 
-
-```
-
-###Plot interpolated data
-```{r}
-#Plot the observed and interpolated temperature regimes
-par(mar=c(2,4,1,1)) 
-plot(date_s,y,xlab="Time",ylab="Temp",lwd=2,type="l") 
-lines(date_s,forecast_fit$fitted,col="steelblue")
-
-#Plot predicted versus observed values
-scatter.smooth(y,forecast_fit$fitted,xlab="Observed",ylab="Predicted",pch=".",main = "Temperature")
-abline(0,1,lty=2)
-R2 = round(cor.test(y,forecast_fit$fitted,na.rm=T)$estimate^2,2)
-mtext(side=3,line=-2,adj=0.1,bquote(R^2 == .(R2)))
+fit3 <- auto.arima(y3,trace=TRUE) #fit limited number of models (faster)
+summary(fit3) #Take a closer look at the best fitted model
+forecast_fit3 <- forecast(y3,model=fit3) #Predict values using the calibration dataset
 ```
 
 ###Check residuals of interpolated data
 ```{r}
-checkresiduals(fit) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
+checkresiduals(fit3) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
 
 #plot residuals versus fitted values (=check for heterosedasticity)
 par(mar=c(4,4,4,4))
-scatter.smooth(forecast_fit$fitted,forecast_fit$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
+scatter.smooth(forecast_fit3$fitted,forecast_fit3$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
 ```
-
 
 ###Smooth interpolated data
 ```{r, cache = TRUE}
 #Interpolate missing values using a Kalman filter (=smoother)
-y_inter <- na_kalman(y,model=fit$model) 
+y_inter3 <- na_kalman(y3,model=fit3$model) 
 
 #Plot the results
 par(mar=c(2,4,1,1))
-plot(y_inter,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
+plot(y_inter3,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
 lines(y,col="black")
 ```
 
 ###Format interpolated time series into a dataframe
 ```{r, results = F}
 #Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates 
-x <- as.data.frame(y_inter) #change y_inter from a ts object to a dataframe
-x$ID <- seq.int(nrow(x)) #add a unique ID
-date <- as.data.frame(APH$hour) #make the unique "hour" index from APH into a separate dataframe
-date$ID <- seq.int(nrow(date)) #create unique ID that aligns with x
-y_inter_df <- merge(x,date,"ID") #merge the two dataframes
-colnames(y_inter_df)<-c("ID","temp","date") #rename columns
-saveRDS(y_inter_df,"y_inter_df.rds")
-y_inter_df <- readRDS("y_inter_df.rds") #Save as an intermediate data product
+x3 <- as.data.frame(y_inter3) #change y_inter from a ts object to a dataframe
+x3$ID <- seq.int(nrow(x3)) #add a unique ID
+date3 <- as.data.frame(APH$hour) #make the unique "hour" index from APH into a separate dataframe
+date3$ID <- seq.int(nrow(date3)) #create unique ID that aligns with x
+y_inter3_df <- merge(x3,date3,"ID") #merge the two dataframes
+colnames(y_inter3_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter3_df,"y_inter3_df.rds")
 ```
 ###Check for NAs
 ```{r}
-missing_data <- y_inter_df[!complete.cases(y_inter_df),] 
+missing_data <- y_inter3_df[!complete.cases(y_inter3_df),] 
 missing_data 
 ```
+
 ###Wavelet
 ```{r}
-APH.w <- analyze.wavelet(y_inter_df, "temp",
+APH.w <- analyze.wavelet(y_inter3_df, "temp",
                         loess.span = 0,
                         dt = 1/24, 
                         make.pval = TRUE, n.sim = 1000,
                         date.format = "%Y-%m-%d-%h") 
 str(APH.w)
-saveRDS(APH.w,"APH.w.rds") #Note: very large file; save as an intermediate data product
+saveRDS(APH.w,"APH.w.rds")
 
 ```
 
-###Wavelet Image ***Figure 5a
+###Wavelet Image
 ```{r}
 #read in data as needed
-##Note: APH.w saved locally, very large file
+##Note: APH.w saved locally, NOT on github (too big)
 APH.w <- readRDS("APH.w.rds")
 
 png("Fig_APH_Wavelet.png", width = 800, height = 500)
@@ -986,14 +745,14 @@ wt.avg(APH.w, siglvl = 0.05, sigcol = "red",
        periodlab = "period (days)")
 ```
 
-###Pull 24 hr period ***Figure 5a
+###Pull 24 hr period
 ```{r}
 #read in data as needed
-y_inter_df <- readRDS("y_inter_df.rds")
+y_inter3_df <- readRDS("y_inter3_df.rds")
 
 #create a dataframe of power and of date
 power_day <- as.data.frame(APH.w$Power[71,])
-power_day <- cbind(power_day, y_inter_df$date)
+power_day <- cbind(power_day, y_inter3_df$date)
 colnames(power_day) <- c("power","date")
 
 png("Fig_APH_Power.png",width = 800, height = 150)
@@ -1007,7 +766,7 @@ dev.off()
 
 ```
 
-##Stender Pond
+##Stender
 ###Read in Data
 ```{r, results = F}
 # Response variable is water temperature
@@ -1033,84 +792,67 @@ SPH <- left_join(hour, SPH)
 missing_data <- SPH[!complete.cases(SPH),] 
 missing_data 
 
-#z score 
-SPH$zTemp <- zscore(SPH$Temp)
-
-#Convert to time series
-SPH_ts <- ts(SPH$zTemp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
-ts.plot(SPH_ts,main="Temperature",ylab = "Temperature (C)", xlab = "Time")
 ```
 
 ###Interpolate missing data
-```{r, cache = TRUE}
+```{r, results = F}
+#Convert to time series
+SPH_ts2 <- ts(SPH$Temp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+
 #Run ARIMA to interpolate missing data
-y2 <- SPH_ts
-date_s2 <- SPH$hour
-y_na2 <- ifelse(is.na(y2),0,NA)
-length(which(y_na2 == 0))/length(y2)
+y4 <- SPH_ts2
+date_s4 <- SPH$hour
+y_na4 <- ifelse(is.na(y4),0,NA)
 
-fit2 <- auto.arima(y2,trace=TRUE) #fit limited number of models (faster)
-summary(fit2) #Take a closer look at the best fitted model
-forecast_fit2 <- forecast(y2,model=fit2) #Predict values using the calibration dataset
-saveRDS(forecast_fit2,"forecast_fit2.RDS") #This step takes a long time to run, so saving intermediate results to facilitate figure creation later. 
-```
-
-###Plot interpolated data
-```{r}
-#Plot the observed and interpolated temperature regimes
-par(mar=c(2,4,1,1)) 
-plot(date_s2,y2,xlab="Time",ylab="Temp",lwd=2,type="l") 
-lines(date_s2,forecast_fit2$fitted,col="steelblue")
-
-#Plot predicted versus observed values
-scatter.smooth(y2,forecast_fit2$fitted,xlab="Observed",ylab="Predicted",pch=".",main = "Temperature")
-abline(0,1,lty=2)
-R2 = round(cor.test(y2,forecast_fit2$fitted,na.rm=T)$estimate^2,2)
-mtext(side=3,line=-2,adj=0.1,bquote(R^2 == .(R2)))
+fit4 <- auto.arima(y4,trace=TRUE) #fit limited number of models (faster)
+summary(fit4) #Take a closer look at the best fitted model
+forecast_fit4 <- forecast(y4,model=fit4) #Predict values using the calibration dataset
+saveRDS(forecast_fit4,"forecast_fit4.RDS")
 ```
 
 ###Check residuals of interpolated data
 ```{r}
 #Check residuals of the interpolation process
-checkresiduals(fit2) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
+checkresiduals(fit4) #also gives the results for the Ljung_Box test with H0 = randomly distributed errors (white noise)
 
 #plot residuals versus fitted values (=check for heterosedasticity)
 par(mar=c(4,4,4,4))
-scatter.smooth(forecast_fit2$fitted,forecast_fit2$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
+scatter.smooth(forecast_fit4$fitted,forecast_fit4$residuals,pch = ".",ylab="Residuals",xlab="Fitted values")
 ```
 
 ###Smooth interpolated data
 ```{r, cache = TRUE}
 #Interpolate missing values using a Kalman filter (=smoother)
-y_inter2 <- na_kalman(y2,model=fit2$model) 
+y_inter4 <- na_kalman(y4,model=fit4$model) 
 
 #Plot the results
 par(mar=c(2,4,1,1))
-plot(y_inter2,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
+plot(y_inter4,xlab="",ylab="Temperature (C)",col="steelblue",main="Interpolation missing values")
 lines(y2,col="black")
 ```
 
 ###Format interpolated time series into a dataframe
 ```{r, results = F}
 #Put the interpolated temperature dataset (y_inter) into a dataset with the correct dates 
-x2 <- as.data.frame(y_inter2) #change y_inter from a ts to a dataframe
-x2$ID <- seq.int(nrow(x2)) #add a unique ID, check it is correct length
-date2 <- as.data.frame(SPH$hour) #make the unique "hour" index from SPH into a separate dataframe
-date2$ID <- seq.int(nrow(date2)) #give that a unique ID that aligns with x
-y_inter2_df <- merge(x2,date2,"ID") #merge the two dataframes
-colnames(y_inter2_df)<-c("ID","temp","date") #rename columns
-saveRDS(y_inter2_df,"y_inter2_df.rds") #Save as an intermediate data product
+x4 <- as.data.frame(y_inter4) #change y_inter from a ts to a dataframe
+x4$ID <- seq.int(nrow(x4)) #add a unique ID, check it is correct length
+date4 <- as.data.frame(SPH$hour) #make the unique "hour" index from SPH into a separate dataframe
+date4$ID <- seq.int(nrow(date4)) #give that a unique ID that aligns with x
+y_inter4_df <- merge(x4,date4,"ID") #merge the two dataframes
+colnames(y_inter4_df)<-c("ID","temp","date") #rename columns
+saveRDS(y_inter4_df,"y_inter4_df.rds")
 ```
 ###Check for NAs
 ```{r}
-missing_data <- y_inter2_df[!complete.cases(y_inter2_df),] 
+missing_data <- y_inter4_df[!complete.cases(y_inter4_df),] 
 missing_data 
 ```
+
 ###Wavelet
 ```{r}
 #run the wavelet
 ?analyze.wavelet
-SPH.w <- analyze.wavelet(y_inter2_df, "temp",
+SPH.w <- analyze.wavelet(y_inter4_df, "temp",
                         loess.span = 0,
                         dt = 1/24, 
                         make.pval = TRUE, n.sim = 1000,
@@ -1138,11 +880,11 @@ wt.avg(SPH.w, siglvl = 0.05, sigcol = "red",
 ###Pull 24 hr period ***Figure 5b
 ```{r}
 #read in data as needed
-y_inter2_df <- readRDS("y_inter2_df.rds")
+y_inter4_df <- readRDS("y_inter4_df.rds")
 
 #create a dataframe of power and of date
 power_day2 <- as.data.frame(SPH.w$Power[71,])
-power_day2 <- cbind(power_day2, y_inter2_df$date)
+power_day2 <- cbind(power_day2, y_inter4_df$date)
 colnames(power_day2) <- c("power","date")
 
 png("Fig_SPH_Power.png",width = 800, height = 150)
@@ -1180,7 +922,6 @@ SP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   scale_color_manual(values = colorSP, labels = c("SP1","SP2"))+ 
   theme(text=element_text(size=16), legend.position="none")+
   geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
-
 
 #Durazo Pond (Durazo)
 colorD <- c("Durazo" = "#88a0dc")
@@ -1234,7 +975,6 @@ GP <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme(text=element_text(size=16), legend.position="none")+
   geom_text(x=200, y=20, label="r = 0.979, p < 0.001", size = 5)
 
-
 #Upper Lawrence Pond (UL)
 colorUL <- c("ULout" = "#88a0dc", "UL3" = "#ed968c")
 UL <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1272,7 +1012,6 @@ SC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
   theme(text=element_text(size=16), legend.position="none")+
   geom_text(x=200, y=20, label="r = 0.999, p < 0.001", size = 5)
 
-
 #Horse Creek (HC)
 colorHC <- c("FGck" = "#88a0dc", "ULck" = "#ed968c")
 HC <- daily_means %>% rowid_to_column(var = "day") %>% ggplot()+
@@ -1302,47 +1041,33 @@ dev.off()
 
 
 #TABLE S1: CORELLATION ANALYSIS OF SENSORS IN SAME PONDS
-##Correlation, Mean, and Standard Deviation between multiple temperature time series in a pond (only for ponds with more than 1 sensor)
+##Correlation, Mean, and Standard Deviation between multiple temperature time series in a pond (only for ponds/creeks with more than 1 sensor)
 ```{r}
 #Stender Pond (SP) 
-#Check correlation between SP1 and SP2
 corSP <- cor.test(daily_means$SP1, daily_means$SP2, use = "na.or.complete", method = "pearson")
-#Tightly correlated-- 0.9987
-
-#Check differences
 diffSP <- daily_means$SP1 - daily_means$SP2
-meanSP <- mean(diffSP,na.rm=T) #0.2552828
-sdSP <- sd(diffSP,na.rm=T) #0.286226
+meanSP <- mean(diffSP,na.rm=T) 
+sdSP <- sd(diffSP,na.rm=T) 
+
 
 #Goodman Pond (GP) 
-#Check correlation between SP1 and SP2
 cor.test(daily_means$GP2, daily_means$GP3, use = "na.or.complete", method = "pearson")
-#Tightly correlated-- 0.979
-
-#Check differences
 diffGP <- daily_means$GP3 - daily_means$GP2
-meanGP <- mean(diffGP,na.rm=T) #0.1340852
-sdGP <- sd(diffGP,na.rm=T) #0.7083215
+meanGP <- mean(diffGP,na.rm=T) 
+sdGP <- sd(diffGP,na.rm=T) 
 
-#Check correlation between SP1 and SP2
 cor.test(daily_means$GP1, daily_means$GP2, use = "na.or.complete", method = "pearson")
-# correlated-- 0.9850231  
-
-#Check differences
 diffGPa <- daily_means$GP2 - daily_means$GP1
-meanGPa <- mean(diffGPa,na.rm=T) #-0.577712
-sdGPa <- sd(diffGP,na.rm=T) #1.249114
+meanGPa <- mean(diffGPa,na.rm=T) 
+sdGPa <- sd(diffGP,na.rm=T) 
+
 
 #Upper Lawrence Pond (UL)
-#Check correlation between SP1 and SP2
 cor.test(daily_means$ULout, daily_means$UL3, use = "na.or.complete", method = "pearson")
 diffUL <-daily_means$ULout- daily_means$UL3
 mean(diffUL,na.rm=T) 
 sd(diffUL,na.rm=T) 
 
-#r = 0.9914487
-#mean = 0.8115467
-#sd = 0.6547496
 
 #Lower Lawrence Pond (LL)
 cor.test(daily_means$LL1, daily_means$LL2, use = "na.or.complete", method = "pearson")
@@ -1350,27 +1075,15 @@ diffLL <-daily_means$LL1- daily_means$LL2
 mean(diffLL,na.rm=T) 
 sd(diffLL,na.rm=T) 
 
-#r = 0.9878339
-#mean = 0.006177339
-#sd = 0.6465672
-
 cor.test(daily_means$LL1, daily_means$LL3, use = "na.or.complete", method = "pearson")
 diffLL <-daily_means$LL1- daily_means$LL3
 mean(diffLL,na.rm=T) 
 sd(diffLL,na.rm=T) 
 
-#r = 0.9807396   
-#mean = -0.3401413
-#sd = 0.7437103
-
 cor.test(daily_means$LL2, daily_means$LL3, use = "na.or.complete", method = "pearson")
 diffLL <-daily_means$LL2- daily_means$LL3
 mean(diffLL,na.rm=T) 
 sd(diffLL,na.rm=T) 
-
-#r = 0.9974816  
-#mean = -0.3463187
-#sd = 0.2118427
 
 
 #Seiad Creek (SC)
@@ -1379,20 +1092,12 @@ diffSC <-daily_means$LSck- daily_means$MayCk
 mean(diffSC,na.rm=T) 
 sd(diffSC,na.rm=T) 
 
-#r = 0.9985793
-#mean =  0.1046814
-#sd = 0.2593251
-
 
 #Horse Creek (HC)
 cor.test(daily_means$FGck, daily_means$ULck, use = "na.or.complete", method = "pearson")
 diffHC <-daily_means$FGck- daily_means$ULck
 mean(diffHC,na.rm=T) 
 sd(diffHC,na.rm=T) 
-
-#r = 0.9987093
-#mean = 0.6443471
-#sd = 0.3673631
 ```
 
 #FIGURE S2: DISSOLVED OXYGEN AND TEMPERATURE DEPTH PROFILES
@@ -1753,58 +1458,12 @@ LS_plot <-(do_LS + temp_LS) + plot_annotation(
   title = "Lower Seiad", theme = theme(plot.title = element_text(size = 16)))
 ```
 
-##Combined Plots ***Figure S2
-```{r}
-png("Fig_FGProfile.png", width = 400, height = 400)
-FG_plot
-dev.off()
-
-png("Fig_GPProfile.png", width = 400, height = 400)
-GP_plot
-dev.off()
-
-#png("Fig_UL1Profile.png", width = 400, height = 400)
-#UL1_plot
-#dev.off()
-#png("Fig_UL2Profile.png", width = 400, height = 400)
-#UL2_plot
-#dev.off()
-png("Fig_UL3Profile.png", width = 400, height = 400)
-UL3_plot
-dev.off()
-
-png("Fig_LLProfile.png", width = 400, height = 400)
-LL_plot
-dev.off()
-
-png("Fig_APProfile.png", width = 400, height = 400)
-AP_plot
-dev.off()
-
-png("Fig_SPProfile.png", width = 400, height = 400)
-SP_plot
-dev.off()
-
-png("Fig_DPProfile.png", width = 400, height = 400)
-DP_plot
-dev.off()
-
-png("Fig_MPProfile.png", width = 400, height = 400)
-MP_plot
-dev.off()
-
-png("Fig_LSProfile.png", width = 400, height = 400)
-LS_plot
-dev.off()
-
-
-```
-
-
 # FIGURE S3: DISSOLVED OXYGEN TIME SERIES
+##Alexander
+```{r, include=FALSE}
 ### Alexander SN 214, 15:40 on 10 July to 14:17 on 16 July
 #### Total Depth (m): 0.66			Sensor Depth (from btm, m): 0.58	
-```{r, include=FALSE}
+
 AP_DO <- read.csv("Sen214_DO.csv")
 AP_DO$date <- lubridate::mdy_hm(AP_DO$date_time)
 head(AP_DO, n = 50) 
@@ -1832,9 +1491,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##Stender
+```{r, include=FALSE}
 ### Stender SN 217, 15:00 on 11 July to 14:43 on 16 July 
 #### Total Depth (m): 0.82			Sensor Depth (from btm, m): 0.5	
-```{r, include=FALSE}
+
 SP_DO <- read.csv("Sen217_DO.csv")
 SP_DO$date <- lubridate::mdy_hm(SP_DO$date_time)
 head(SP_DO, n = 50) 
@@ -1863,9 +1524,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##Durazo
+```{r, include=FALSE}
 ### Durazo SN 212, 11:02 on 17 July to 12:20 on 23 July
 #### Total Depth (m): 0.75			Sensor Depth (from btm, m): 0.5	
-```{r, include=FALSE}
+
 Durazo_DO <- read.csv("Sen212_DO.csv")
 Durazo_DO$date <- lubridate::mdy_hm(Durazo_DO$date_time)
 head(Durazo_DO, n = 50) 
@@ -1893,9 +1556,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
-### Lower Seiad SN 216, 11:32 on 17 July to 12:32 on 23 July 
-#### Total Depth (m): 1.86			Sensor Depth (from btm, m): 0.55	
+##Lower Seiad
 ```{r, include=FALSE}
+### Lower Seiad SN 216, 11:32 on 17 July to 12:32 on 23 July 
+#### Total Depth (m): 1.86			Sensor Depth (from btm, m): 0.55
+
 LS_DO <- read.csv("Sen216_DO.csv")
 LS_DO$date <- lubridate::mdy_hm(LS_DO$date_time)
 head(LS_DO, n = 50) 
@@ -1923,9 +1588,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##May
+```{r, include=FALSE}
 ### May SN 213, 11:50 on 17 July to 12:42 on 23 July 
 #### Total Depth (m): 1.1			Sensor Depth (from btm, m): 0.9	
-```{r, include=FALSE}
+
 May_DO <- read.csv("Sen213_DO.csv")
 May_DO$date <- lubridate::mdy_hm(May_DO$date_time)
 head(May_DO, n = 50) 
@@ -1952,9 +1619,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##Fish Gulch
+```{r, include=FALSE}
 ### FishGulch SN 215, 12:46 on 10 July to 10:53 on 16 July
 #### Total Depth (m): 0.51			Sensor Depth (from btm, m): 0.45
-```{r, include=FALSE}
+
 FG_DO <- read.csv("Sen215_DO.csv")
 FG_DO$date <- lubridate::mdy_hm(FG_DO$date_time)
 head(FG_DO, n = 50) 
@@ -1981,9 +1650,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##Goodman
+```{r, include=FALSE}
 ###Goodman SN 212, 10:47 on 9 July to 12:35 on 16 July
 #### Total Depth (m): 0.57			Sensor Depth (from btm, m): 0.40
-```{r, include=FALSE}
+
 GP_DO <- read.csv("Sen212_DO.csv")
 GP_DO$date <- lubridate::mdy_hm(GP_DO$date_time)
 head(GP_DO, n = 50) 
@@ -2011,9 +1682,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##Upper Lawrence
+```{r, include=FALSE}
 ### Upper Law SN 216, 15:24 on 7 July to 11:45 on 16 July
 #### Total Depth (m): 0.22			Sensor Depth (from btm, m): 0.15
-```{r, include=FALSE}
+
 UL_DO <- read.csv("Sen216_DO.csv")
 UL_DO$date <- lubridate::mdy_hm(UL_DO$date_time)
 head(UL_DO, n = 50) 
@@ -2043,10 +1716,11 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
+##Lower Lawrence
+```{r, include=FALSE}
 ### Lower Law SN 213, 15:45 on 9 July to 12:02 on 16 July 
 #### Total Depth (m): 0.33			Sensor Depth (from btm, m): 0.20	
 
-```{r, include=FALSE}
 LL_DO <- read.csv("Sen213_DO.csv")
 LL_DO$date <- lubridate::mdy_hm(LL_DO$date_time)
 head(LL_DO, n = 50) 
