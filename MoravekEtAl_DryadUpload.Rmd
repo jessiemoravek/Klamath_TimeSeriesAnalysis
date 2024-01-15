@@ -62,15 +62,12 @@ SPH <- read.csv("Stender_Historical_2.csv") #Historical data from Stender Pond
 ##DO was measured using HOBO DO probes for several days in each pond in July 2020. 
 
 dp <- read.csv("DepthProfiles_All.csv") #Temperature and Dissolved Oxygen depth profiles taken in June 2023
-AP_DO <- read.csv("Sen214_DO.csv")
-SP_DO <- read.csv("Sen217_DO.csv")
-Durazo_DO <- read.csv("Sen212_DO.csv")
-LS_DO <- read.csv("Sen216_DO.csv")
-May_DO <- read.csv("Sen213_DO.csv")
-FG_DO <- read.csv("Sen215_DO.csv")
-GP_DO <- read.csv("Sen212_DO.csv")
-UL_DO <- read.csv("Sen216_DO.csv")
-LL_DO <- read.csv("Sen213_DO.csv")
+Sen212_DO <- read.csv("Sen212_DO.csv")
+Sen213_DO <- read.csv("Sen213_DO.csv")
+Sen214_DO <- read.csv("Sen214_DO.csv")
+Sen215_DO <- read.csv("Sen215_DO.csv")
+Sen216_DO <- read.csv("Sen216_DO.csv")
+Sen217_DO <- read.csv("Sen217_DO.csv")
 
 
 #MISCELLANEOUS DATA 
@@ -1463,7 +1460,7 @@ LS_plot <-(do_LS + temp_LS) + plot_annotation(
 ### Alexander SN 214, 15:40 on 10 July to 14:17 on 16 July
 #### Total Depth (m): 0.66			Sensor Depth (from btm, m): 0.58	
 
-AP_DO <- read.csv("Sen214_DO.csv")
+AP_DO <- Sen214_DO
 AP_DO$date <- lubridate::mdy_hm(AP_DO$date_time)
 head(AP_DO, n = 50) 
 tail(AP_DO, n = 100) 
@@ -1495,7 +1492,7 @@ ggplot()+
 ### Stender SN 217, 15:00 on 11 July to 14:43 on 16 July 
 #### Total Depth (m): 0.82			Sensor Depth (from btm, m): 0.5	
 
-SP_DO <- read.csv("Sen217_DO.csv")
+SP_DO <- Sen217_DO
 SP_DO$date <- lubridate::mdy_hm(SP_DO$date_time)
 head(SP_DO, n = 50) 
 tail(SP_DO, n = 100) 
@@ -1528,7 +1525,7 @@ ggplot()+
 ### Durazo SN 212, 11:02 on 17 July to 12:20 on 23 July
 #### Total Depth (m): 0.75			Sensor Depth (from btm, m): 0.5	
 
-Durazo_DO <- read.csv("Sen212_DO.csv")
+Durazo_DO <- Sen212_DO
 Durazo_DO$date <- lubridate::mdy_hm(Durazo_DO$date_time)
 head(Durazo_DO, n = 50) 
 tail(Durazo_DO, n = 100) 
@@ -1560,7 +1557,7 @@ ggplot()+
 ### Lower Seiad SN 216, 11:32 on 17 July to 12:32 on 23 July 
 #### Total Depth (m): 1.86			Sensor Depth (from btm, m): 0.55
 
-LS_DO <- read.csv("Sen216_DO.csv")
+LS_DO <- Sen216_DO
 LS_DO$date <- lubridate::mdy_hm(LS_DO$date_time)
 head(LS_DO, n = 50) 
 tail(LS_DO, n = 100) 
@@ -1592,7 +1589,7 @@ ggplot()+
 ### May SN 213, 11:50 on 17 July to 12:42 on 23 July 
 #### Total Depth (m): 1.1			Sensor Depth (from btm, m): 0.9	
 
-May_DO <- read.csv("Sen213_DO.csv")
+May_DO <- Sen213_DO
 May_DO$date <- lubridate::mdy_hm(May_DO$date_time)
 head(May_DO, n = 50) 
 tail(May_DO, n = 100) 
@@ -1623,7 +1620,7 @@ ggplot()+
 ### FishGulch SN 215, 12:46 on 10 July to 10:53 on 16 July
 #### Total Depth (m): 0.51			Sensor Depth (from btm, m): 0.45
 
-FG_DO <- read.csv("Sen215_DO.csv")
+FG_DO <- Sen215_DO
 FG_DO$date <- lubridate::mdy_hm(FG_DO$date_time)
 head(FG_DO, n = 50) 
 tail(FG_DO, n = 100) 
@@ -1654,7 +1651,7 @@ ggplot()+
 ###Goodman SN 212, 10:47 on 9 July to 12:35 on 16 July
 #### Total Depth (m): 0.57			Sensor Depth (from btm, m): 0.40
 
-GP_DO <- read.csv("Sen212_DO.csv")
+GP_DO <- Sen212_DO
 GP_DO$date <- lubridate::mdy_hm(GP_DO$date_time)
 head(GP_DO, n = 50) 
 tail(GP_DO, n = 100) 
@@ -1686,7 +1683,7 @@ ggplot()+
 ### Upper Law SN 216, 15:24 on 7 July to 11:45 on 16 July
 #### Total Depth (m): 0.22			Sensor Depth (from btm, m): 0.15
 
-UL_DO <- read.csv("Sen216_DO.csv")
+UL_DO <- Sen216_DO
 UL_DO$date <- lubridate::mdy_hm(UL_DO$date_time)
 head(UL_DO, n = 50) 
 tail(UL_DO, n = 100) 
@@ -1720,7 +1717,7 @@ ggplot()+
 ### Lower Law SN 213, 15:45 on 9 July to 12:02 on 16 July 
 #### Total Depth (m): 0.33			Sensor Depth (from btm, m): 0.20	
 
-LL_DO <- read.csv("Sen213_DO.csv")
+LL_DO <- Sen213_DO
 LL_DO$date <- lubridate::mdy_hm(LL_DO$date_time)
 head(LL_DO, n = 50) 
 tail(LL_DO, n = 100) 
@@ -1787,7 +1784,6 @@ hcdo <- ggplot()+
 ```{r}
 #Read in data
 quarterHour_condensed <- as.data.frame(t(quarterHour_condensed))
-quarterHour_condensed <- quarterHour_condensed %>% mutate_all(~ifelse(is.nan(.), NA, .))
 
 #Create 15 min sequence
 quarterHour <- seq(mdy_h('7/1/2020 00'),mdy_h('7/13/2021 00'),by = "15 mins")
@@ -1816,7 +1812,6 @@ AP_CV <- quarterHour_condensed %>%       #15 min data
   dplyr::select(AP) %>%                  #Select site
   summarize(CV = CV(AP))                 #Calculate CV per day for one site
 AP_CV_mean <- mean(AP_CV$CV,na.rm=T)     #Take all days as mean over entire year
-plot(AP_CV$day,AP_CV$CV)                 #Plot a time series of CV
 
 #Stender Pond
 SP_CV <- quarterHour_condensed %>% 
@@ -1824,7 +1819,6 @@ SP_CV <- quarterHour_condensed %>%
   dplyr::select(SP) %>%
   summarize(CV = CV(SP))
 SP_CV_mean <- mean(SP_CV$CV,na.rm=T)
-plot(SP_CV$day,SP_CV$CV)
 
 #Durazo Pond
 Durazo_CV <- quarterHour_condensed %>% 
@@ -1832,7 +1826,6 @@ Durazo_CV <- quarterHour_condensed %>%
   dplyr::select(Durazo) %>%
   summarize(CV = CV(Durazo))
 Durazo_CV_mean <- mean(Durazo_CV$CV,na.rm=T)
-plot(Durazo_CV$day,Durazo_CV$CV)
 
 #Lower Seiad 
 LS_CV <- quarterHour_condensed %>% 
@@ -1840,7 +1833,6 @@ LS_CV <- quarterHour_condensed %>%
   dplyr::select(LS) %>%
   summarize(CV = CV(LS))
 LS_CV_mean <- mean(LS_CV$CV,na.rm=T)
-plot(LS_CV$day,LS_CV$CV)
 
 #May Pond
 May_CV <- quarterHour_condensed %>% 
@@ -1848,7 +1840,6 @@ May_CV <- quarterHour_condensed %>%
   dplyr::select(May) %>%
   summarize(CV = CV(May))
 May_CV_mean <- mean(May_CV$CV,na.rm=T)
-plot(May_CV$day,May_CV$CV)
 
 #Fish Gulch
 FG_CV <- quarterHour_condensed %>% 
@@ -1856,7 +1847,6 @@ FG_CV <- quarterHour_condensed %>%
   dplyr::select(FG) %>%
   summarize(CV = CV(FG))
 FG_CV_mean <- mean(FG_CV$CV,na.rm=T)
-plot(FG_CV$day,FG_CV$CV)
 
 #Goodman Pond
 GP_CV <- quarterHour_condensed %>% 
@@ -1864,7 +1854,6 @@ GP_CV <- quarterHour_condensed %>%
   dplyr::select(GP) %>%
   summarize(CV = CV(GP))
 GP_CV_mean <- mean(GP_CV$CV,na.rm=T)
-plot(GP_CV$day,GP_CV$CV)
 
 #Upper Lawrence
 UL_CV <- quarterHour_condensed %>% 
@@ -1872,7 +1861,6 @@ UL_CV <- quarterHour_condensed %>%
   dplyr::select(UL) %>%
   summarize(CV = CV(UL))
 UL_CV_mean <- mean(UL_CV$CV,na.rm=T)
-plot(UL_CV$day,UL_CV$CV)
 
 #Lower Lawrence
 LL_CV <- quarterHour_condensed %>% 
@@ -1880,7 +1868,6 @@ LL_CV <- quarterHour_condensed %>%
   dplyr::select(LL) %>%
   summarize(CV = CV(LL))
 LL_CV_mean <- mean(LL_CV$CV,na.rm=T)
-plot(LL_CV$day,LL_CV$CV)
 
 #Seiad Creek
 SC_CV <- quarterHour_condensed %>% 
@@ -1888,7 +1875,6 @@ SC_CV <- quarterHour_condensed %>%
   dplyr::select(SC) %>%
   summarize(CV = CV(SC))
 SC_CV_mean <- mean(SC_CV$CV,na.rm=T)
-plot(SC_CV$day,SC_CV$CV)
 
 #Horse Creek
 HC_CV <- quarterHour_condensed %>% 
@@ -1896,7 +1882,6 @@ HC_CV <- quarterHour_condensed %>%
   dplyr::select(HC) %>%
   summarize(CV = CV(HC))
 HC_CV_mean <- mean(HC_CV$CV,na.rm=T)
-plot(HC_CV$day,HC_CV$CV)
 
 ```
 
