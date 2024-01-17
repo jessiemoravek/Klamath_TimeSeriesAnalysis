@@ -725,7 +725,6 @@ saveRDS(APH.w,"APH.w.rds")
 ###Wavelet Image
 ```{r}
 #read in data as needed
-##Note: APH.w saved locally, NOT on github (too big)
 APH.w <- readRDS("APH.w.rds")
 
 png("Fig_APH_Wavelet.png", width = 800, height = 500)
@@ -847,7 +846,6 @@ missing_data
 ###Wavelet
 ```{r}
 #run the wavelet
-?analyze.wavelet
 SPH.w <- analyze.wavelet(y_inter4_df, "temp",
                         loess.span = 0,
                         dt = 1/24, 
@@ -860,7 +858,6 @@ saveRDS(SPH.w,"SPH.w.rds") #Save as an intermediate data product
 ###Wavelet Image ***Figure 5b
 ```{r}
 #read in data as needed
-##Note: SPH.w saved locally, NOT on github (too big)
 SPH.w <- readRDS("SPH.w.rds")
 
 png("Fig_SPH_Wavelet.png", width = 800, height = 500)
