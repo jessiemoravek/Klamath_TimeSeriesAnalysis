@@ -262,7 +262,7 @@ par(mfrow=c(5,2), mai=c(0.1,0.5,0.2,0.1), omi=c(0.5,0,0,0))
   }
 ```
 
-##AICc ***Table 2
+##AICc 
 ```{r}
 data.frame(Model=c("mod1", "mod2", "mod3", "mod4"),
            AICc=round(c(mod1.fit$AICc,
@@ -621,7 +621,7 @@ b4 <- ggplot()+
 b4
 ```
 
-##Boxplot Figure ***Figure 4
+##Boxplot Figure 
 ```{r}
 png("Fig_Boxplots.png",width = 1000, height = 600)
 (b1 + b2) / (b3 + b4)
@@ -855,7 +855,7 @@ str(SPH.w) # Output
 saveRDS(SPH.w,"SPH.w.rds") #Save as an intermediate data product
 ```
 
-###Wavelet Image ***Figure 5b
+###Wavelet Image 
 ```{r}
 #read in data as needed
 SPH.w <- readRDS("SPH.w.rds")
@@ -870,7 +870,7 @@ wt.avg(SPH.w, siglvl = 0.05, sigcol = "red",
        periodlab = "period (days)")
 ```
 
-###Pull 24 hr period ***Figure 5b
+###Pull 24 hr period 
 ```{r}
 #read in data as needed
 y_inter4_df <- readRDS("y_inter4_df.rds")
@@ -1741,7 +1741,7 @@ ggplot()+
   theme(text=element_text(size=16),legend.position = "none")
 ```
 
-##Combined graphs ***Figure S3
+##Combined graphs 
 ```{r}
 mycolors <- met.brewer(name="Archambault",n=5,type="discrete")
 
@@ -1916,7 +1916,7 @@ HC_UL <- HC_CV_mean/UL_CV_mean
 HC_LL <- HC_CV_mean/LL_CV_mean
 ```
 
-##CV Data Table ***Table S2
+##CV Data Table
 ```{r}
 data.frame(Creek=c("Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Seiad Creek","Horse Creek","Horse Creek","Horse Creek","Horse Creek"),
            CreekCV=round(c(SC_CV_mean,SC_CV_mean,SC_CV_mean,SC_CV_mean,SC_CV_mean,HC_CV_mean,HC_CV_mean,HC_CV_mean,HC_CV_mean),2),
