@@ -623,9 +623,7 @@ b4
 
 ##Boxplot Figure 
 ```{r}
-png("Fig_Boxplots.png",width = 1000, height = 600)
 (b1 + b2) / (b3 + b4)
-dev.off()
 ```
 
 
@@ -659,9 +657,9 @@ missing_data
 ```
 
 ###Interpolate missing data
-```{r, cache = TRUE}
+```{r cache=FALSE}
 #Create time-series object using non-transformed temperature values (Temp)
-APH_ts2 <- ts(APH$Temp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+APH_ts2 <- ts(APH$Temp, start = c(351, 13), frequency = 24) 
 
 #Run ARIMA to interpolate missing data
 y3 <- APH_ts2
@@ -727,14 +725,12 @@ saveRDS(APH.w,"APH.w.rds")
 #read in data as needed
 APH.w <- readRDS("APH.w.rds")
 
-png("Fig_APH_Wavelet.png", width = 800, height = 500)
 wt.image(APH.w, color.key = "quantile", n.levels = 100, main = "Alexander Pond Wavelet",  
          legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), 
          label.time.axis=TRUE,
          show.date=TRUE,
          label.period.axis=TRUE,
          periodlab = "period (days)")
-dev.off()
 
 wt.avg(APH.w, siglvl = 0.05, sigcol = "red",
        periodlab = "period (days)")
@@ -750,14 +746,12 @@ power_day <- as.data.frame(APH.w$Power[71,])
 power_day <- cbind(power_day, y_inter3_df$date)
 colnames(power_day) <- c("power","date")
 
-png("Fig_APH_Power.png",width = 800, height = 150)
 ggplot()+
   geom_line(data = power_day, aes(x = date, y = power))+
   labs(x = "Date",
        y = "Power")+
   theme_classic()+
   theme(text=element_text(size=16))
-dev.off()
 
 ```
 
@@ -792,7 +786,7 @@ missing_data
 ###Interpolate missing data
 ```{r, results = F}
 #Convert to time series
-SPH_ts2 <- ts(SPH$Temp, start = c(351, 13), frequency = 24) # This time series starts on 16 Dec 2010 at~13:00, so it starts on day 351 at hour 13 and the frequency is 24 (24 hours per day)
+SPH_ts2 <- ts(SPH$Temp, start = c(351, 13), frequency = 24) 
 
 #Run ARIMA to interpolate missing data
 y4 <- SPH_ts2
@@ -860,11 +854,9 @@ saveRDS(SPH.w,"SPH.w.rds") #Save as an intermediate data product
 #read in data as needed
 SPH.w <- readRDS("SPH.w.rds")
 
-png("Fig_SPH_Wavelet.png", width = 800, height = 500)
 wt.image(SPH.w, color.key = "quantile", n.levels = 250, main = "Stender Pond Wavelet",  
          legend.params = list(lab = "wavelet power levels", mar = 6.5, lab.line=4, label.digits = 4), label.time.axis=TRUE,show.date=TRUE,
          periodlab = "period (days)")
-dev.off()
 
 wt.avg(SPH.w, siglvl = 0.05, sigcol = "red",
        periodlab = "period (days)")
@@ -880,14 +872,12 @@ power_day2 <- as.data.frame(SPH.w$Power[71,])
 power_day2 <- cbind(power_day2, y_inter4_df$date)
 colnames(power_day2) <- c("power","date")
 
-png("Fig_SPH_Power.png",width = 800, height = 150)
 ggplot()+
   geom_line(data = power_day2, aes(x = date, y = power))+
   labs(x = "Date",
        y = "Power")+
   theme_classic()+
   theme(text=element_text(size=16))
-dev.off()
 
 ```
 
@@ -1023,13 +1013,10 @@ empty <- daily_means %>% rowid_to_column(var = "day") %>%
   theme(panel.background = element_rect(fill = 'white', colour = 'white')) +
   theme_void()
 
-png("Fig_RawTempSC.png",width = 1000, height = 600)
+#Plots
 (AP + SP + D) / (LS + May + SC)
-dev.off()
 
-png("Fig_RawTempHC.png",width = 1000, height = 600)
 (FG + GP + UL) / (LL + HC + empty)
-dev.off()
 ```
 
 
@@ -1095,11 +1082,11 @@ sd(diffHC,na.rm=T)
 
 #FIGURE S2: DISSOLVED OXYGEN AND TEMPERATURE DEPTH PROFILES
 ##Data Wrangling
-```{r, include=FALSE}
+```{r}
 dp <- read.csv("DepthProfiles_All.csv")
 ```
 ###Fish Gulch
-```{r, include=FALSE}
+```{r}
 mycolors <- met.brewer(name="Archambault",n=7,type="discrete")
 mycolors[5]
 dp_FG <- dp[dp$site %in% c("FishGulch"),]
@@ -1134,7 +1121,7 @@ FG_plot
 ```
 
 ###Goodman
-```{r, include=FALSE}
+```{r}
 dp_GP <- dp[dp$site %in% c("Goodman"),]
 
 do_GP <- ggplot()+
@@ -1164,7 +1151,7 @@ GP_plot
 ```
 
 ###Upper Lawrence 1
-```{r, include=FALSE}
+```{r}
 dp_UL1 <- dp[dp$site %in% c("UpperLawrence1"),]
 
 do_UL1 <- ggplot()+
@@ -1192,7 +1179,7 @@ UL1_plot <-print((do_UL1 + temp_UL1) + plot_annotation(
   title = "Upper Lawrence 1", theme = theme(plot.title = element_text(size = 16))))
 ```
 ###Upper Lawrence 2
-```{r, include=FALSE}
+```{r}
 dp_UL2 <- dp[dp$site %in% c("UpperLawrence2"),]
 
 do_UL2 <- ggplot()+
@@ -1220,7 +1207,7 @@ UL2_plot <-(do_UL2 + temp_UL2) + plot_annotation(
   title = "Upper Lawrence 2", theme = theme(plot.title = element_text(size = 16)))
 ```
 ###Upper Lawrence 3
-```{r, include=FALSE}
+```{r}
 dp_UL3 <- dp[dp$site %in% c("UpperLawrence3"),]
 dp_UL3_1 <- dp_UL3[dp_UL3$profile %in% 1,]
 dp_UL3_2 <- dp_UL3[dp_UL3$profile %in% 2,]
@@ -1256,7 +1243,7 @@ UL3_plot <-(do_UL3 + temp_UL3) + plot_annotation(
 ```
 
 ###Lower Lawrence
-```{r, include=FALSE}
+```{r}
 dp_LL <- dp[dp$site %in% c("LowerLawrence"),]
 dp_LL_1 <- dp_LL[dp_LL$profile %in% 1,]
 dp_LL_2 <- dp_LL[dp_LL$profile %in% 2,]
@@ -1289,7 +1276,7 @@ LL_plot <-(do_LL + temp_LL) + plot_annotation(
 ```
 
 ###Alexander
-```{r, include=FALSE}
+```{r}
 dp_AP <- dp[dp$site %in% c("Alexander"),]
 dp_AP_1 <- dp_AP[dp_AP$profile %in% 1,]
 dp_AP_2 <- dp_AP[dp_AP$profile %in% 2,]
@@ -1322,7 +1309,7 @@ AP_plot <-(do_AP + temp_AP) + plot_annotation(
 ```
 
 ###Stender
-```{r, include=FALSE}
+```{r}
 dp_SP <- dp[dp$site %in% c("Stender"),]
 dp_SP_1 <- dp_SP[dp_SP$profile %in% 1,]
 dp_SP_2 <- dp_SP[dp_SP$profile %in% 2,]
@@ -1354,7 +1341,7 @@ SP_plot <-(do_SP + temp_SP) + plot_annotation(
   title = "Stender", theme = theme(plot.title = element_text(size = 16)))
 ```
 ###Durazo
-```{r, include=FALSE}
+```{r}
 dp_DP <- dp[dp$site %in% c("Durazo"),]
 dp_DP_1 <- dp_DP[dp_DP$profile %in% 1,]
 dp_DP_2 <- dp_DP[dp_DP$profile %in% 2,]
@@ -1386,7 +1373,7 @@ DP_plot <-(do_DP + temp_DP) + plot_annotation(
   title = "Durazo", theme = theme(plot.title = element_text(size = 16)))
 ```
 ###May
-```{r, include=FALSE}
+```{r}
 dp_MP <- dp[dp$site %in% c("May"),]
 dp_MP_1 <- dp_MP[dp_MP$profile %in% 1,]
 dp_MP_2 <- dp_MP[dp_MP$profile %in% 2,]
@@ -1419,7 +1406,7 @@ MP_plot <-(do_MP + temp_MP) + plot_annotation(
 ```
 
 ###Lower Seiad
-```{r, include=FALSE}
+```{r}
 dp_LS <- dp[dp$site %in% c("LowerSeiad"),]
 dp_LS_1 <- dp_LS[dp_LS$profile %in% 1,]
 dp_LS_2 <- dp_LS[dp_LS$profile %in% 2,]
@@ -1453,7 +1440,7 @@ LS_plot <-(do_LS + temp_LS) + plot_annotation(
 
 # FIGURE S3: DISSOLVED OXYGEN TIME SERIES
 ##Alexander
-```{r, include=FALSE}
+```{r}
 ### Alexander SN 214, 15:40 on 10 July to 14:17 on 16 July
 #### Total Depth (m): 0.66			Sensor Depth (from btm, m): 0.58	
 
@@ -1485,7 +1472,7 @@ ggplot()+
 ```
 
 ##Stender
-```{r, include=FALSE}
+```{r}
 ### Stender SN 217, 15:00 on 11 July to 14:43 on 16 July 
 #### Total Depth (m): 0.82			Sensor Depth (from btm, m): 0.5	
 
@@ -1518,7 +1505,7 @@ ggplot()+
 ```
 
 ##Durazo
-```{r, include=FALSE}
+```{r}
 ### Durazo SN 212, 11:02 on 17 July to 12:20 on 23 July
 #### Total Depth (m): 0.75			Sensor Depth (from btm, m): 0.5	
 
@@ -1550,7 +1537,7 @@ ggplot()+
 ```
 
 ##Lower Seiad
-```{r, include=FALSE}
+```{r}
 ### Lower Seiad SN 216, 11:32 on 17 July to 12:32 on 23 July 
 #### Total Depth (m): 1.86			Sensor Depth (from btm, m): 0.55
 
@@ -1582,7 +1569,7 @@ ggplot()+
 ```
 
 ##May
-```{r, include=FALSE}
+```{r}
 ### May SN 213, 11:50 on 17 July to 12:42 on 23 July 
 #### Total Depth (m): 1.1			Sensor Depth (from btm, m): 0.9	
 
@@ -1613,7 +1600,7 @@ ggplot()+
 ```
 
 ##Fish Gulch
-```{r, include=FALSE}
+```{r}
 ### FishGulch SN 215, 12:46 on 10 July to 10:53 on 16 July
 #### Total Depth (m): 0.51			Sensor Depth (from btm, m): 0.45
 
@@ -1644,7 +1631,7 @@ ggplot()+
 ```
 
 ##Goodman
-```{r, include=FALSE}
+```{r}
 ###Goodman SN 212, 10:47 on 9 July to 12:35 on 16 July
 #### Total Depth (m): 0.57			Sensor Depth (from btm, m): 0.40
 
@@ -1676,7 +1663,7 @@ ggplot()+
 ```
 
 ##Upper Lawrence
-```{r, include=FALSE}
+```{r}
 ### Upper Law SN 216, 15:24 on 7 July to 11:45 on 16 July
 #### Total Depth (m): 0.22			Sensor Depth (from btm, m): 0.15
 
@@ -1710,7 +1697,7 @@ ggplot()+
 ```
 
 ##Lower Lawrence
-```{r, include=FALSE}
+```{r}
 ### Lower Law SN 213, 15:45 on 9 July to 12:02 on 16 July 
 #### Total Depth (m): 0.33			Sensor Depth (from btm, m): 0.20	
 
